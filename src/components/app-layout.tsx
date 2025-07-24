@@ -21,6 +21,7 @@ import {
   Settings,
   CircleUser,
   Crown,
+  Film,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -44,6 +45,11 @@ function SidebarNavigation() {
       href: '/generate-script',
       label: 'Script Vidéo',
       icon: Clapperboard,
+    },
+    {
+      href: '/edit-video',
+      label: 'Editeur Vidéo',
+      icon: Film,
     },
     {
       href: '/generate-quiz',

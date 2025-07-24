@@ -4,6 +4,7 @@ import {
   FileQuestion,
   FileText,
   ArrowRight,
+  Film,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -45,6 +46,13 @@ const features = [
     description:
       'Résumez rapidement des documents pour en extraire les points clés.',
     href: '/summarize-document',
+  },
+  {
+    icon: <Film className="h-8 w-8 text-primary" />,
+    title: 'Editeur Vidéo',
+    description:
+      'Montez vos vidéos de cours avec des outils simples et intuitifs.',
+    href: '/edit-video',
   },
 ];
 
