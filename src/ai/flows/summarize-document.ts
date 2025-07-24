@@ -10,6 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import {googleAI} from '@genkit-ai/googleai';
 
 const SummarizeDocumentInputSchema = z.object({
   documentDataUri: z
@@ -31,6 +32,7 @@ export async function summarizeDocument(input: SummarizeDocumentInput): Promise<
 
 const prompt = ai.definePrompt({
   name: 'summarizeDocumentPrompt',
+  model: googleAI.model('gemini-1.5-flash'),
   input: {schema: SummarizeDocumentInputSchema},
   output: {schema: SummarizeDocumentOutputSchema},
   prompt: `You are an expert summarizer, able to distill complex documents into their key points.

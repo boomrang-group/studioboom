@@ -10,6 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import {googleAI} from '@genkit-ai/googleai';
 
 const GenerateLessonContentInputSchema = z.object({
   prompt: z.string().describe('The prompt to use to generate the lesson content.'),
@@ -35,6 +36,7 @@ export async function generateLessonContent(
 
 const generateLessonContentPrompt = ai.definePrompt({
   name: 'generateLessonContentPrompt',
+  model: googleAI.model('gemini-1.5-flash'),
   input: {schema: GenerateLessonContentInputSchema},
   output: {schema: GenerateLessonContentOutputSchema},
   prompt: `Generate lesson content in French based on the following prompt:\n\n{{prompt}}`,

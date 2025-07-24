@@ -1,4 +1,3 @@
-// This is an auto-generated file from Firebase Studio.
 'use server';
 /**
  * @fileOverview A video script generation AI agent.
@@ -10,6 +9,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import {googleAI} from '@genkit-ai/googleai';
 
 const GenerateVideoScriptInputSchema = z.object({
   topic: z.string().describe('The topic of the lesson video.'),
@@ -29,6 +29,7 @@ export async function generateVideoScript(input: GenerateVideoScriptInput): Prom
 
 const prompt = ai.definePrompt({
   name: 'generateVideoScriptPrompt',
+  model: googleAI.model('gemini-1.5-flash'),
   input: {schema: GenerateVideoScriptInputSchema},
   output: {schema: GenerateVideoScriptOutputSchema},
   prompt: `You are an AI video script generator for educational videos.
