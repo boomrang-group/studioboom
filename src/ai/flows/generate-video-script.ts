@@ -33,7 +33,7 @@ const prompt = ai.definePrompt({
   output: {schema: GenerateVideoScriptOutputSchema},
   prompt: `You are an AI video script generator for educational videos.
 
-  Your task is to create an engaging video script for a lesson based on the provided topic, target audience, and desired length.
+  Your task is to create an engaging video script in French for a lesson based on the provided topic, target audience, and desired length.
 
   Topic: {{{topic}}}
   Target Audience: {{{targetAudience}}}

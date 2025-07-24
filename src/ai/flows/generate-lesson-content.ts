@@ -37,7 +37,7 @@ const generateLessonContentPrompt = ai.definePrompt({
   name: 'generateLessonContentPrompt',
   input: {schema: GenerateLessonContentInputSchema},
   output: {schema: GenerateLessonContentOutputSchema},
-  prompt: `Generate lesson content based on the following prompt:\n\n{{prompt}}`,
+  prompt: `Generate lesson content in French based on the following prompt:\n\n{{prompt}}`,
 });
 
 const generateLessonContentFlow = ai.defineFlow(

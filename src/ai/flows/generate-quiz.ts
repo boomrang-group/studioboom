@@ -42,7 +42,7 @@ const prompt = ai.definePrompt({
   output: {schema: GenerateQuizOutputSchema},
   prompt: `You are an expert quiz generator for teachers.
 
-  You will generate a quiz from the given lesson text, generating the specified number of questions.
+  You will generate a quiz in French from the given lesson text, generating the specified number of questions.
   The questions should be of the specified type.
 
   Lesson Text: {{{lessonText}}}

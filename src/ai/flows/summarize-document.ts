@@ -35,7 +35,7 @@ const prompt = ai.definePrompt({
   output: {schema: SummarizeDocumentOutputSchema},
   prompt: `You are an expert summarizer, able to distill complex documents into their key points.
 
-  Please summarize the following document:
+  Please summarize the following document in French:
 
   {{media url=documentDataUri}}`,
 });
