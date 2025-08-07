@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -10,6 +11,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { CheckCircle } from 'lucide-react';
+import Link from 'next/link';
 
 const premiumFeatures = [
   'Générations de contenu illimitées',
@@ -21,25 +23,25 @@ const premiumFeatures = [
 const subscriptionPlans = [
     {
         title: 'Mensuel',
-        price: '7$',
+        price: '7',
         period: '/ mois',
         description: 'Idéal pour commencer et tester toutes les fonctionnalités.',
     },
     {
         title: 'Trimestriel',
-        price: '20$',
+        price: '20',
         period: '/ trimestre',
         description: 'Économisez en vous engageant sur 3 mois.',
     },
     {
         title: 'Semestriel',
-        price: '35$',
+        price: '35',
         period: '/ semestre',
         description: 'Un excellent compromis pour une utilisation régulière.',
     },
     {
         title: 'Annuel',
-        price: '60$',
+        price: '60',
         period: '/ an',
         description: 'La meilleure offre pour un accès illimité toute l\'année.',
     },
@@ -81,12 +83,14 @@ export default function SubscribePage() {
                  <Card key={plan.title} className="flex flex-col">
                     <CardHeader>
                         <CardTitle>{plan.title}</CardTitle>
-                        <p className="text-3xl font-bold pt-2">{plan.price}<span className="text-sm font-normal text-muted-foreground">{plan.period}</span></p>
+                        <p className="text-3xl font-bold pt-2">{plan.price}$<span className="text-sm font-normal text-muted-foreground">{plan.period}</span></p>
                         <CardDescription>{plan.description}</CardDescription>
                     </CardHeader>
                     <CardContent className="flex-grow"></CardContent>
                     <CardFooter>
-                        <Button className="w-full">S'abonner</Button>
+                        <Button className="w-full" asChild>
+                            <Link href={`/checkout?plan=${plan.title}&price=${plan.price}`}>S'abonner</Link>
+                        </Button>
                     </CardFooter>
                  </Card>
             ))}
@@ -103,7 +107,9 @@ export default function SubscribePage() {
                 </CardDescription>
             </CardHeader>
             <CardFooter>
-                <Button variant="outline">Acheter des crédits</Button>
+                <Button variant="outline" asChild>
+                    <Link href={`/checkout?plan=Pay-As-You-Go&price=10`}>Acheter 10 crédits</Link>
+                </Button>
             </CardFooter>
          </Card>
       </div>
