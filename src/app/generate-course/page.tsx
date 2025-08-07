@@ -1,10 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { generateLessonContent } from '@/ai/flows/generate-lesson-content';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+
 import {
   Form,
   FormControl,
@@ -16,7 +19,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Loader2, File, Presentation, Crown } from 'lucide-react';
+import { Loader2, File, Presentation, Crown, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
@@ -25,8 +28,10 @@ const formSchema = z.object({
 
 export default function GenerateCoursePage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [lessonContent, setLessonContent] = useState('');
   const { toast } = useToast();
+  const lessonContentRef = useRef<HTMLDivElement>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -52,6 +57,35 @@ export default function GenerateCoursePage() {
       setIsLoading(false);
     }
   }
+
+  const handleExportPDF = async () => {
+    if (!lessonContentRef.current) return;
+    setIsExporting(true);
+    toast({ title: 'Exportation en PDF', description: 'Veuillez patienter...' });
+
+    try {
+      const canvas = await html2canvas(lessonContentRef.current, { scale: 2 });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'px',
+        format: [canvas.width, canvas.height],
+      });
+      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+      pdf.save('cours-kelasi.pdf');
+      toast({ title: 'Succès', description: 'Le PDF a été téléchargé.' });
+    } catch (error) {
+      console.error('Export PDF error:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Une erreur est survenue lors de l\'exportation en PDF.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
 
   return (
     <div className="space-y-8">
@@ -104,21 +138,22 @@ export default function GenerateCoursePage() {
           </CardHeader>
           <CardContent>
             <div
-              className="prose dark:prose-invert max-w-none"
+              ref={lessonContentRef}
+              className="prose dark:prose-invert max-w-none p-4 bg-white text-black"
               dangerouslySetInnerHTML={{ __html: lessonContent.replace(/\n/g, '<br />') }}
             />
           </CardContent>
           <CardFooter className="gap-2">
-             <Button variant="outline">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 mr-2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="M10.4 12.6c.2-.4.5-.8.9-1a2.1 2.1 0 0 1 2.6 2.5c0 .4-.1.8-.4 1.1l-2.1 2.1-2.1-2.1A2.1 2.1 0 0 1 10.4 12.6Z"></path><path d="M15.5 10H18v.5c.3 1.2-.4 2.5-1.5 3"></path></svg>
+             <Button variant="outline" onClick={handleExportPDF} disabled={isExporting}>
+                {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Download className="mr-2 h-4 w-4"/>}
                 Exporter en PDF
              </Button>
-             <Button variant="outline">
+             <Button variant="outline" disabled>
                 <Crown className="mr-2 h-4 w-4 text-amber-500" />
                 <File className="mr-2 h-4 w-4"/>
                 Word (.docx)
              </Button>
-             <Button variant="outline">
+             <Button variant="outline" disabled>
                 <Crown className="mr-2 h-4 w-4 text-amber-500" />
                 <Presentation className="mr-2 h-4 w-4"/>
                 PowerPoint (.pptx)
