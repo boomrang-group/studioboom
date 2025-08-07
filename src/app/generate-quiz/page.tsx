@@ -4,7 +4,9 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { generateQuiz } from '@/ai/flows/generate-quiz';
+import { generateQuiz, type GenerateQuizOutput } from '@/ai/flows/generate-quiz';
+import Link from 'next/link';
+
 import {
   Form,
   FormControl,
@@ -24,7 +26,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Loader2, File, Presentation, Crown } from 'lucide-react';
+import { Loader2, Share2, ClipboardCopy } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
@@ -35,7 +37,8 @@ const formSchema = z.object({
 
 export default function GenerateQuizPage() {
   const [isLoading, setIsLoading] = useState(false);
-  const [quizContent, setQuizContent] = useState('');
+  const [quizData, setQuizData] = useState<GenerateQuizOutput | null>(null);
+  const [quizLink, setQuizLink] = useState('');
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -49,10 +52,18 @@ export default function GenerateQuizPage() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    setQuizContent('');
+    setQuizData(null);
+    setQuizLink('');
+
     try {
       const result = await generateQuiz(values);
-      setQuizContent(result.quiz);
+      setQuizData(result);
+
+      const dataStr = JSON.stringify(result);
+      const encodedData = Buffer.from(dataStr).toString('base64');
+      const link = `${window.location.origin}/quiz/${Date.now()}?data=${encodeURIComponent(encodedData)}`;
+      setQuizLink(link);
+
     } catch (error) {
       console.error(error);
       toast({
@@ -63,6 +74,14 @@ export default function GenerateQuizPage() {
     } finally {
       setIsLoading(false);
     }
+  }
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(quizLink);
+    toast({
+        title: 'Copié !',
+        description: 'Le lien du quiz a été copié dans le presse-papiers.'
+    })
   }
 
   return (
@@ -156,7 +175,7 @@ export default function GenerateQuizPage() {
         </CardContent>
       </Card>
       
-      {quizContent && (
+      {quizData && (
         <Card>
           <CardHeader>
             <CardTitle>Quiz Généré</CardTitle>
@@ -164,13 +183,32 @@ export default function GenerateQuizPage() {
           <CardContent>
              <div
               className="prose dark:prose-invert max-w-none"
-              dangerouslySetInnerHTML={{ __html: quizContent.replace(/\n/g, '<br />') }}
-            />
+             >
+                {quizData.questions.map((q, i) => (
+                    <div key={i} className="mb-4">
+                        <p><strong>{i+1}. {q.question}</strong></p>
+                        <ul className="list-disc pl-5">
+                            {q.options.map((opt, j) => (
+                                <li key={j}>{opt}</li>
+                            ))}
+                        </ul>
+                        <p className="text-sm text-green-600">Réponse : {q.answer}</p>
+                    </div>
+                ))}
+             </div>
           </CardContent>
-           <CardFooter>
-             <Button variant="outline">
-                <Crown className="mr-2 h-4 w-4 text-amber-500" />
-                Partager le quiz interactif
+           <CardFooter className="flex-col items-start gap-4">
+            <h3 className="font-semibold">Partager le quiz interactif</h3>
+             <div className="flex w-full items-center space-x-2">
+                <Input value={quizLink} readOnly />
+                <Button variant="outline" size="icon" onClick={copyToClipboard}>
+                    <ClipboardCopy className="h-4 w-4" />
+                </Button>
+             </div>
+             <Button asChild>
+                <Link href={quizLink} target="_blank">
+                    Ouvrir le quiz interactif <Share2 className="ml-2 h-4 w-4"/>
+                </Link>
              </Button>
            </CardFooter>
         </Card>

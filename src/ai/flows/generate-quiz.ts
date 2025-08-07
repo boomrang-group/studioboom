@@ -28,8 +28,14 @@ const GenerateQuizInputSchema = z.object({
 });
 export type GenerateQuizInput = z.infer<typeof GenerateQuizInputSchema>;
 
+const QuestionSchema = z.object({
+  question: z.string().describe('The question text.'),
+  options: z.array(z.string()).describe('An array of possible answers.'),
+  answer: z.string().describe('The correct answer.'),
+});
+
 const GenerateQuizOutputSchema = z.object({
-  quiz: z.string().describe('The generated quiz in a readable format.'),
+  questions: z.array(QuestionSchema).describe("An array of quiz questions."),
 });
 export type GenerateQuizOutput = z.infer<typeof GenerateQuizOutputSchema>;
 
@@ -45,13 +51,13 @@ const prompt = ai.definePrompt({
   prompt: `You are an expert quiz generator for teachers.
 
   You will generate a quiz in French from the given lesson text, generating the specified number of questions.
-  The questions should be of the specified type.
+  The questions should be of the specified type. For multiple choice questions, provide 4 options. For true/false questions, provide "Vrai" and "Faux" as options. For short answer, the options array can be empty, but the answer field should contain the expected answer.
 
   Lesson Text: {{{lessonText}}}
   Question Type: {{{questionType}}}
   Number of Questions: {{{numberOfQuestions}}}
 
-  The quiz should be formatted in a readable way for students.
+  The output must be a valid JSON object matching the requested schema.
   `,
 });
 
