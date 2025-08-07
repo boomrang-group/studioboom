@@ -132,9 +132,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <Header>
           <SidebarTrigger className="md:hidden" />
           <div className="flex-1 text-right">
-            <Button>
-              <Crown className="mr-2 h-4 w-4" />
-              Passer au Premium
+            <Button asChild>
+              <Link href="/subscribe">
+                <Crown className="mr-2 h-4 w-4" />
+                Passer au Premium
+              </Link>
             </Button>
           </div>
         </Header>

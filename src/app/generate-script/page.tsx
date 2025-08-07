@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Loader2, Download, Crown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
+import Link from 'next/link';
 
 const formSchema = z.object({
   topic: z.string().min(10, 'Le sujet doit contenir au moins 10 caractères.'),
@@ -143,10 +144,12 @@ export default function GenerateScriptPage() {
             />
           </CardContent>
           <CardFooter>
-             <Button variant="outline">
-                <Crown className="mr-2 h-4 w-4 text-amber-500" />
-                <Download className="mr-2 h-4 w-4" />
-                Exporter en MP4
+             <Button asChild variant="outline">
+                <Link href="/subscribe">
+                    <Crown className="mr-2 h-4 w-4 text-amber-500" />
+                    <Download className="mr-2 h-4 w-4" />
+                    Exporter en MP4
+                </Link>
              </Button>
           </CardFooter>
         </Card>

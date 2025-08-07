@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Loader2, File, Presentation, Crown, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
 
 const formSchema = z.object({
   prompt: z.string().min(10, 'Le sujet doit contenir au moins 10 caractères.'),
@@ -148,15 +149,19 @@ export default function GenerateCoursePage() {
                 {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Download className="mr-2 h-4 w-4"/>}
                 Exporter en PDF
              </Button>
-             <Button variant="outline" disabled>
-                <Crown className="mr-2 h-4 w-4 text-amber-500" />
-                <File className="mr-2 h-4 w-4"/>
-                Word (.docx)
+             <Button variant="outline" asChild>
+                <Link href="/subscribe">
+                    <Crown className="mr-2 h-4 w-4 text-amber-500" />
+                    <File className="mr-2 h-4 w-4"/>
+                    Word (.docx)
+                </Link>
              </Button>
-             <Button variant="outline" disabled>
-                <Crown className="mr-2 h-4 w-4 text-amber-500" />
-                <Presentation className="mr-2 h-4 w-4"/>
-                PowerPoint (.pptx)
+             <Button variant="outline" asChild>
+                <Link href="/subscribe">
+                    <Crown className="mr-2 h-4 w-4 text-amber-500" />
+                    <Presentation className="mr-2 h-4 w-4"/>
+                    PowerPoint (.pptx)
+                </Link>
              </Button>
           </CardFooter>
         </Card>
