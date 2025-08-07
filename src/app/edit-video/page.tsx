@@ -36,9 +36,6 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import type { FFmpeg } from '@ffmpeg/ffmpeg';
-import { fetchFile, toBlobURL } from '@ffmpeg/util';
 
 
 interface Clip {
@@ -99,45 +96,9 @@ export default function EditVideoPage() {
   const [isVoiceOverDialogOpen, setIsVoiceOverDialogOpen] = useState(false);
   const [recordingStartTime, setRecordingStartTime] = useState(0);
 
-  // FFmpeg state
+  // Export state
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
-  const ffmpegRef = useRef<FFmpeg | null>(null);
-  const [ffmpegLoaded, setFfmpegLoaded] = useState(false);
-
-  useEffect(() => {
-    const loadFfmpeg = async () => {
-      if (typeof window !== "undefined") {
-        const { FFmpeg } = await import('@ffmpeg/ffmpeg');
-        const ffmpegInstance = new FFmpeg();
-        ffmpegInstance.on('log', ({ message }) => {
-            console.log(message);
-        });
-        ffmpegInstance.on('progress', ({ progress }) => {
-            setExportProgress(Math.round(progress * 100));
-        });
-
-        const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd'
-
-        try {
-            await ffmpegInstance.load({
-                coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-                wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-            });
-            ffmpegRef.current = ffmpegInstance;
-            setFfmpegLoaded(true);
-        } catch(e) {
-            console.error("FFmpeg load error:", e);
-            toast({
-                title: 'Erreur de chargement',
-                description: 'Impossible de charger l\'éditeur vidéo. Veuillez rafraîchir la page.',
-                variant: 'destructive',
-            });
-        }
-      }
-    };
-    loadFfmpeg();
-  }, [toast]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -371,45 +332,66 @@ export default function EditVideoPage() {
 
 
   const handleExport = async () => {
-    const ffmpeg = ffmpegRef.current;
-    if (!ffmpeg || !ffmpegLoaded || clips.length === 0) {
-        toast({ title: 'Erreur', description: 'FFmpeg n\'est pas chargé ou aucune vidéo n\'a été importée.', variant: 'destructive' });
-        return;
+    if (clips.length === 0) {
+      toast({ title: 'Erreur', description: 'Aucune vidéo n\'a été importée.', variant: 'destructive' });
+      return;
     }
     setIsExporting(true);
     setExportProgress(0);
-    toast({ title: 'Démarrage de l\'exportation', description: 'Veuillez patienter, cela peut prendre un certain temps...' });
+    toast({ title: 'Démarrage de l\'exportation', description: 'Veuillez patienter, votre vidéo est en cours de traitement...' });
 
     try {
-        // This is a placeholder for the actual complex FFmpeg command generation
-        // For now, we will just export the first clip as a proof of concept.
-        const mainClip = clips[0];
-        await ffmpeg.writeFile(mainClip.file.name, await fetchFile(mainClip.file));
-        
-        // A simple command to just copy the video stream.
-        // A real implementation would involve complex filters for text, images, and audio mixing.
-        await ffmpeg.exec(['-i', mainClip.file.name, 'output.mp4']);
-        
-        const data = await ffmpeg.readFile('output.mp4');
-        const url = URL.createObjectURL(new Blob([(data as any).buffer], { type: 'video/mp4' }));
-        
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'kelasi-video-export.mp4';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
-        toast({ title: 'Exportation réussie !', description: 'Votre vidéo a été téléchargée.' });
-        
-    } catch (error) {
-        console.error('Export error:', error);
-        toast({ title: 'Erreur d\'exportation', description: 'Une erreur est survenue lors du traitement de la vidéo.', variant: 'destructive' });
+      // Here we would gather all the necessary data and send it to the server-side API
+      // For now, it's just a placeholder.
+      const exportData = {
+        videoClip: { name: clips[0].file.name, type: clips[0].file.type },
+        textClips,
+        imageClips: imageClips.map(c => ({ name: c.file.name, type: c.file.type, start: c.start, end: c.end })),
+        audioClips: audioClips.map(c => ({ type: c.file.type, start: c.start, end: c.end })),
+      };
+
+      // We need to implement file upload logic here, e.g. using FormData
+      const formData = new FormData();
+      formData.append('video', clips[0].file);
+      imageClips.forEach((clip, i) => formData.append(`image_${i}`, clip.file));
+      audioClips.forEach((clip, i) => formData.append(`audio_${i}`, clip.file));
+      formData.append('exportData', JSON.stringify(exportData));
+
+
+      const response = await fetch('/api/export-video', {
+        method: 'POST',
+        body: formData, // This will need to be properly constructed with all files
+      });
+      
+      setExportProgress(50);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erreur du serveur');
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      setExportProgress(100);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'kelasi-video-export.mp4';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast({ title: 'Exportation réussie !', description: 'Votre vidéo a été téléchargée.' });
+
+    } catch (error: any) {
+      console.error('Export error:', error);
+      toast({ title: 'Erreur d\'exportation', description: error.message || 'Une erreur est survenue lors du traitement de la vidéo.', variant: 'destructive' });
     } finally {
-        setIsExporting(false);
+      setIsExporting(false);
     }
-};
+  };
+
 
   const renderOverlays = () => {
     const activeAudio = audioClips.find(clip => isPlaying && currentTime >= clip.start && currentTime < clip.start + 0.1);
@@ -477,12 +459,6 @@ export default function EditVideoPage() {
               Importer
             </Button>
           </div>
-           {!ffmpegLoaded && !isExporting && (
-             <div className="mt-4 flex items-center gap-2 text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin"/>
-                <span>Chargement de l'éditeur...</span>
-             </div>
-           )}
         </CardContent>
       </Card>
 
@@ -789,7 +765,7 @@ export default function EditVideoPage() {
 
               </CardContent>
             </Card>
-            <Button className="w-full" size="lg" onClick={handleExport} disabled={!ffmpegLoaded || isExporting || !videoSrc}>
+            <Button className="w-full" size="lg" onClick={handleExport} disabled={isExporting || !videoSrc}>
                 {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Download className="mr-2 h-4 w-4" />}
                 {isExporting ? `Exportation... ${exportProgress}%` : 'Exporter la Vidéo'}
             </Button>
