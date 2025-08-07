@@ -24,11 +24,11 @@ import {
   Upload,
   Play,
   Pause,
-  Clock,
   Download,
   Video,
   Music,
   Text,
+  FileImage,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -49,6 +49,15 @@ interface TextClip {
     duration: number;
 }
 
+interface ImageClip {
+    id: number;
+    src: string;
+    start: number;
+    end: number;
+    duration: number;
+}
+
+
 export default function EditVideoPage() {
   const [videoSrc, setVideoSrc] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -61,6 +70,9 @@ export default function EditVideoPage() {
   const [textClips, setTextClips] = useState<TextClip[]>([]);
   const [newText, setNewText] = useState('');
   const [isTextDialogOpen, setIsTextDialogOpen] = useState(false);
+  const [imageClips, setImageClips] = useState<ImageClip[]>([]);
+  const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
+  const [newImageFile, setNewImageFile] = useState<File | null>(null);
 
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -195,22 +207,79 @@ export default function EditVideoPage() {
         description: 'Votre texte a été ajouté sur la timeline.'
     })
   }
+  
+  const handleImageFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+        setNewImageFile(file);
+    } else {
+        setNewImageFile(null);
+        toast({
+            title: 'Fichier Invalide',
+            description: 'Veuillez sélectionner un fichier image valide (PNG, JPG, etc.).',
+            variant: 'destructive',
+        });
+    }
+  }
 
-  const renderTextOverlays = () => {
-    return textClips.map(clip => {
-        if (currentTime >= clip.start && currentTime <= clip.end) {
-            return (
-                <div
-                    key={clip.id}
-                    className="absolute bottom-10 left-1/2 -translate-x-1/2 p-2 bg-black/50 text-white rounded-md text-xl font-bold"
-                    style={{pointerEvents: 'none'}} // Make text non-interactive
-                >
-                    {clip.text}
-                </div>
-            )
-        }
-        return null;
-    })
+  const handleAddImage = () => {
+    if (!newImageFile || !videoRef.current) return;
+    
+    const imageUrl = URL.createObjectURL(newImageFile);
+    const imageDuration = 5; // Default duration 5 seconds
+    const startTime = videoRef.current.currentTime;
+    const endTime = Math.min(startTime + imageDuration, duration);
+
+    const newImageClip: ImageClip = {
+        id: Date.now(),
+        src: imageUrl,
+        start: startTime,
+        end: endTime,
+        duration: endTime - startTime,
+    };
+
+    setImageClips(prev => [...prev, newImageClip]);
+    setNewImageFile(null);
+    setIsImageDialogOpen(false);
+    toast({
+        title: 'Image Ajoutée',
+        description: `L'image a été ajoutée à la timeline.`
+    });
+  }
+
+  const renderOverlays = () => {
+    return (
+        <>
+            {textClips.map(clip => {
+                if (currentTime >= clip.start && currentTime <= clip.end) {
+                    return (
+                        <div
+                            key={clip.id}
+                            className="absolute bottom-10 left-1/2 -translate-x-1/2 p-2 bg-black/50 text-white rounded-md text-xl font-bold"
+                            style={{pointerEvents: 'none'}} // Make text non-interactive
+                        >
+                            {clip.text}
+                        </div>
+                    )
+                }
+                return null;
+            })}
+            {imageClips.map(clip => {
+                 if (currentTime >= clip.start && currentTime <= clip.end) {
+                    return (
+                        <img
+                            key={clip.id}
+                            src={clip.src}
+                            alt="Image incrustée"
+                            className="absolute top-4 right-4 w-1/4 max-w-48 rounded-md shadow-lg"
+                             style={{pointerEvents: 'none'}}
+                        />
+                    )
+                 }
+                 return null;
+            })}
+        </>
+    )
   }
   
   const timelineWidth = 1000; // Fixed width for timeline for now
@@ -265,7 +334,7 @@ export default function EditVideoPage() {
                             onPause={() => setIsPlaying(false)}
                             onClick={togglePlay}
                         ></video>
-                        {renderTextOverlays()}
+                        {renderOverlays()}
                     </div>
                     <div className="mt-4 flex items-center gap-4">
                        <Button onClick={togglePlay} size="icon">
@@ -303,7 +372,7 @@ export default function EditVideoPage() {
                     <div className="space-y-2 pt-4">
                         {/* Video Track */}
                         <div className="flex items-center gap-2">
-                           <div className="w-24 text-xs font-semibold flex items-center gap-1">
+                           <div className="w-24 text-xs font-semibold flex items-center gap-1 shrink-0">
                                <Video className="h-4 w-4" />
                                <span>Piste Vidéo</span>
                            </div>
@@ -330,10 +399,36 @@ export default function EditVideoPage() {
                                 ))}
                            </div>
                         </div>
+
+                         {/* Image Track */}
+                        <div className="flex items-center gap-2">
+                           <div className="w-24 text-xs font-semibold flex items-center gap-1 shrink-0">
+                               <FileImage className="h-4 w-4" />
+                               <span>Piste Image</span>
+                           </div>
+                           <div className="h-12 bg-muted rounded-md flex-1 relative flex items-center">
+                               {imageClips.map((clip) => (
+                                <div
+                                    key={clip.id}
+                                    className={cn(
+                                        'h-full bg-orange-500/20 border-2 border-orange-500 cursor-pointer',
+                                        'flex items-center justify-center text-xs text-center p-1',
+                                        'absolute'
+                                    )}
+                                    style={{
+                                       left: `${(clip.start / duration) * timelineWidth}px`,
+                                       width: `${(clip.duration / duration) * timelineWidth}px`,
+                                    }}
+                                >
+                                     <img src={clip.src} alt="" className="h-full w-auto object-contain p-1"/>
+                                </div>
+                                ))}
+                           </div>
+                        </div>
                         
                         {/* Text Track */}
                         <div className="flex items-center gap-2">
-                           <div className="w-24 text-xs font-semibold flex items-center gap-1">
+                           <div className="w-24 text-xs font-semibold flex items-center gap-1 shrink-0">
                                <Text className="h-4 w-4" />
                                <span>Piste Texte</span>
                            </div>
@@ -359,7 +454,7 @@ export default function EditVideoPage() {
 
                         {/* Audio Track */}
                         <div className="flex items-center gap-2">
-                           <div className="w-24 text-xs font-semibold flex items-center gap-1">
+                           <div className="w-24 text-xs font-semibold flex items-center gap-1 shrink-0">
                                <Music className="h-4 w-4" />
                                <span>Piste Audio</span>
                            </div>
@@ -428,9 +523,41 @@ export default function EditVideoPage() {
                   </DialogContent>
                 </Dialog>
 
-                <Button className="w-full justify-start" disabled>
-                  <ImageIcon className="mr-2 h-4 w-4" /> Incruster une Image/Logo
-                </Button>
+                <Dialog open={isImageDialogOpen} onOpenChange={setIsImageDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="w-full justify-start">
+                        <ImageIcon className="mr-2 h-4 w-4" /> Incruster une Image/Logo
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Incruster une image ou un logo</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4 space-y-4">
+                        <Input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageFileChange}
+                        />
+                         {newImageFile && (
+                            <div className="text-sm text-muted-foreground">
+                                <p>Aperçu :</p>
+                                <img src={URL.createObjectURL(newImageFile)} alt="Aperçu" className="mt-2 rounded-md max-h-40"/>
+                            </div>
+                         )}
+                         <p className="text-sm text-muted-foreground">
+                           L'image sera ajoutée à la position actuelle de la tête de lecture ({formatTime(currentTime)}) pour une durée de 5 secondes.
+                        </p>
+                    </div>
+                    <DialogFooter>
+                      <DialogClose asChild>
+                         <Button variant="ghost">Annuler</Button>
+                      </DialogClose>
+                      <Button onClick={handleAddImage} disabled={!newImageFile}>Ajouter l'image</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+                
                 <Button className="w-full justify-start" disabled>
                   <Mic className="mr-2 h-4 w-4" /> Ajouter une Voix Off
                 </Button>
@@ -446,5 +573,7 @@ export default function EditVideoPage() {
     </div>
   );
 }
+
+    
 
     
