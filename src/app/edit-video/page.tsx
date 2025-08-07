@@ -8,6 +8,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog';
+import {
   Scissors,
   Type,
   Image as ImageIcon,
@@ -19,6 +28,7 @@ import {
   Download,
   Video,
   Music,
+  Text,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -31,6 +41,14 @@ interface Clip {
   file: File;
 }
 
+interface TextClip {
+    id: number;
+    text: string;
+    start: number;
+    end: number;
+    duration: number;
+}
+
 export default function EditVideoPage() {
   const [videoSrc, setVideoSrc] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -40,6 +58,10 @@ export default function EditVideoPage() {
   const { toast } = useToast();
   const [clips, setClips] = useState<Clip[]>([]);
   const [activeClip, setActiveClip] = useState<Clip | null>(null);
+  const [textClips, setTextClips] = useState<TextClip[]>([]);
+  const [newText, setNewText] = useState('');
+  const [isTextDialogOpen, setIsTextDialogOpen] = useState(false);
+
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -149,6 +171,47 @@ export default function EditVideoPage() {
         description: `Le clip a été scindé à ${formatTime(splitTime)}.`,
       });
   };
+
+  const handleAddText = () => {
+    if (!newText.trim() || !videoRef.current) return;
+
+    const textDuration = 3; // Default duration of 3 seconds
+    const startTime = videoRef.current.currentTime;
+    const endTime = Math.min(startTime + textDuration, duration);
+
+    const newTextClip: TextClip = {
+      id: Date.now(),
+      text: newText,
+      start: startTime,
+      end: endTime,
+      duration: endTime - startTime,
+    };
+
+    setTextClips(prev => [...prev, newTextClip]);
+    setNewText('');
+    setIsTextDialogOpen(false);
+    toast({
+        title: 'Texte Ajouté',
+        description: 'Votre texte a été ajouté sur la timeline.'
+    })
+  }
+
+  const renderTextOverlays = () => {
+    return textClips.map(clip => {
+        if (currentTime >= clip.start && currentTime <= clip.end) {
+            return (
+                <div
+                    key={clip.id}
+                    className="absolute bottom-10 left-1/2 -translate-x-1/2 p-2 bg-black/50 text-white rounded-md text-xl font-bold"
+                    style={{pointerEvents: 'none'}} // Make text non-interactive
+                >
+                    {clip.text}
+                </div>
+            )
+        }
+        return null;
+    })
+  }
   
   const timelineWidth = 1000; // Fixed width for timeline for now
 
@@ -191,15 +254,19 @@ export default function EditVideoPage() {
                     <CardTitle>Aperçu Vidéo</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <video
-                        ref={videoRef}
-                        src={videoSrc}
-                        className="w-full rounded-md bg-muted"
-                        onTimeUpdate={handleTimeUpdate}
-                        onLoadedMetadata={handleLoadedMetadata}
-                        onPlay={() => setIsPlaying(true)}
-                        onPause={() => setIsPlaying(false)}
-                    ></video>
+                    <div className="relative">
+                        <video
+                            ref={videoRef}
+                            src={videoSrc}
+                            className="w-full rounded-md bg-muted"
+                            onTimeUpdate={handleTimeUpdate}
+                            onLoadedMetadata={handleLoadedMetadata}
+                            onPlay={() => setIsPlaying(true)}
+                            onPause={() => setIsPlaying(false)}
+                            onClick={togglePlay}
+                        ></video>
+                        {renderTextOverlays()}
+                    </div>
                     <div className="mt-4 flex items-center gap-4">
                        <Button onClick={togglePlay} size="icon">
                            {isPlaying ? <Pause /> : <Play />}
@@ -263,6 +330,32 @@ export default function EditVideoPage() {
                                 ))}
                            </div>
                         </div>
+                        
+                        {/* Text Track */}
+                        <div className="flex items-center gap-2">
+                           <div className="w-24 text-xs font-semibold flex items-center gap-1">
+                               <Text className="h-4 w-4" />
+                               <span>Piste Texte</span>
+                           </div>
+                           <div className="h-12 bg-muted rounded-md flex-1 relative flex items-center">
+                               {textClips.map((clip) => (
+                                <div
+                                    key={clip.id}
+                                    className={cn(
+                                        'h-full bg-blue-500/20 border-2 border-blue-500 cursor-pointer',
+                                        'flex items-center justify-center text-xs text-center p-1',
+                                        'absolute'
+                                    )}
+                                    style={{
+                                       left: `${(clip.start / duration) * timelineWidth}px`,
+                                       width: `${(clip.duration / duration) * timelineWidth}px`,
+                                    }}
+                                >
+                                     <span className="truncate">{clip.text}</span>
+                                </div>
+                                ))}
+                           </div>
+                        </div>
 
                         {/* Audio Track */}
                         <div className="flex items-center gap-2">
@@ -305,9 +398,36 @@ export default function EditVideoPage() {
                 <Button className="w-full justify-start" onClick={handleSplitClip} disabled={!activeClip}>
                   <Scissors className="mr-2 h-4 w-4" /> Couper / Scinder
                 </Button>
-                <Button className="w-full justify-start" disabled>
-                  <Type className="mr-2 h-4 w-4" /> Ajouter du Texte
-                </Button>
+                
+                <Dialog open={isTextDialogOpen} onOpenChange={setIsTextDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="w-full justify-start">
+                      <Type className="mr-2 h-4 w-4" /> Ajouter du Texte
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Ajouter un calque de texte</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <Textarea 
+                            placeholder="Votre texte ici..."
+                            value={newText}
+                            onChange={(e) => setNewText(e.target.value)}
+                        />
+                         <p className="text-sm text-muted-foreground mt-2">
+                           Le texte sera ajouté à la position actuelle de la tête de lecture ({formatTime(currentTime)}) pour une durée de 3 secondes.
+                        </p>
+                    </div>
+                    <DialogFooter>
+                      <DialogClose asChild>
+                         <Button variant="ghost">Annuler</Button>
+                      </DialogClose>
+                      <Button onClick={handleAddText}>Ajouter le texte</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+
                 <Button className="w-full justify-start" disabled>
                   <ImageIcon className="mr-2 h-4 w-4" /> Incruster une Image/Logo
                 </Button>
@@ -325,5 +445,6 @@ export default function EditVideoPage() {
       )}
     </div>
   );
+}
 
     
