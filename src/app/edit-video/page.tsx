@@ -107,6 +107,7 @@ export default function EditVideoPage() {
 
   useEffect(() => {
     const loadFfmpeg = async () => {
+      if (typeof window !== "undefined") {
         const { FFmpeg } = await import('@ffmpeg/ffmpeg');
         const ffmpegInstance = new FFmpeg();
         ffmpegInstance.on('log', ({ message }) => {
@@ -126,11 +127,17 @@ export default function EditVideoPage() {
             ffmpegRef.current = ffmpegInstance;
             setFfmpegLoaded(true);
         } catch(e) {
-            console.error(e);
+            console.error("FFmpeg load error:", e);
+            toast({
+                title: 'Erreur de chargement',
+                description: 'Impossible de charger l\'éditeur vidéo. Veuillez rafraîchir la page.',
+                variant: 'destructive',
+            });
         }
+      }
     };
     loadFfmpeg();
-  }, []);
+  }, [toast]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -360,7 +367,7 @@ export default function EditVideoPage() {
         setAudioClips(prev => [...prev, newAudioClip]);
         setAudioChunks([]); 
     }
-  }, [isRecording, audioChunks, recordingStartTime]);
+  }, [isRecording, audioChunks, recordingStartTime, videoRef]);
 
 
   const handleExport = async () => {
@@ -793,5 +800,3 @@ export default function EditVideoPage() {
     </div>
   );
 }
-
-    
