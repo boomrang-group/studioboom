@@ -29,9 +29,12 @@ import {
   Music,
   Text,
   FileImage,
+  Circle,
+  Square,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface Clip {
   id: number;
@@ -57,6 +60,13 @@ interface ImageClip {
     duration: number;
 }
 
+interface AudioClip {
+    id: number;
+    src: string;
+    start: number;
+    end: number;
+    duration: number;
+}
 
 export default function EditVideoPage() {
   const [videoSrc, setVideoSrc] = useState<string | null>(null);
@@ -73,6 +83,14 @@ export default function EditVideoPage() {
   const [imageClips, setImageClips] = useState<ImageClip[]>([]);
   const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
   const [newImageFile, setNewImageFile] = useState<File | null>(null);
+
+  // Voice Over State
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
+  const [audioClips, setAudioClips] = useState<AudioClip[]>([]);
+  const [isVoiceOverDialogOpen, setIsVoiceOverDialogOpen] = useState(false);
+  const [recordingStartTime, setRecordingStartTime] = useState(0);
 
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -247,6 +265,65 @@ export default function EditVideoPage() {
     });
   }
 
+  const handleStartRecording = async () => {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorderRef.current = new MediaRecorder(stream);
+        
+        mediaRecorderRef.current.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+                setAudioChunks((prev) => [...prev, event.data]);
+            }
+        };
+
+        mediaRecorderRef.current.onstop = () => {
+            stream.getTracks().forEach(track => track.stop()); // Stop mic access
+        };
+        
+        setAudioChunks([]);
+        mediaRecorderRef.current.start();
+        setIsRecording(true);
+        setRecordingStartTime(videoRef.current?.currentTime ?? 0);
+        toast({ title: "L'enregistrement a commencé !" });
+    } catch (error) {
+        console.error("Error accessing microphone:", error);
+        toast({
+            title: "Accès au microphone refusé",
+            description: "Veuillez autoriser l'accès au microphone dans les paramètres de votre navigateur.",
+            variant: 'destructive'
+        });
+    }
+  };
+
+  const handleStopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+        mediaRecorderRef.current.stop();
+        setIsRecording(false);
+        toast({ title: "Enregistrement terminé", description: "Traitement de l'audio..." });
+    }
+  };
+
+  useEffect(() => {
+    if (!isRecording && audioChunks.length > 0) {
+        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        const audioUrl = URL.createObjectURL(audioBlob);
+        
+        const audioDuration = (videoRef.current?.currentTime ?? 0) - recordingStartTime;
+
+        const newAudioClip: AudioClip = {
+            id: Date.now(),
+            src: audioUrl,
+            start: recordingStartTime,
+            end: recordingStartTime + audioDuration,
+            duration: audioDuration,
+        };
+
+        setAudioClips(prev => [...prev, newAudioClip]);
+        setAudioChunks([]); // Clear chunks for next recording
+    }
+  }, [isRecording, audioChunks, recordingStartTime]);
+
+
   const renderOverlays = () => {
     return (
         <>
@@ -277,6 +354,14 @@ export default function EditVideoPage() {
                     )
                  }
                  return null;
+            })}
+            {/* Audio overlays are not visual, but we can play them here */}
+            {audioClips.map(clip => {
+                if(isPlaying && currentTime >= clip.start && currentTime < clip.start + 0.1) {
+                    const audio = new Audio(clip.src);
+                    audio.play();
+                }
+                return null;
             })}
         </>
     )
@@ -477,6 +562,32 @@ export default function EditVideoPage() {
                                 <span className="text-muted-foreground text-xs italic pl-2">Piste audio originale</span>
                            </div>
                         </div>
+
+                        {/* Voice Over Track */}
+                        <div className="flex items-center gap-2">
+                           <div className="w-24 text-xs font-semibold flex items-center gap-1 shrink-0">
+                               <Mic className="h-4 w-4" />
+                               <span>Voix Off</span>
+                           </div>
+                           <div className="h-12 bg-muted rounded-md flex-1 relative flex items-center">
+                                {audioClips.map((clip) => (
+                                <div
+                                    key={clip.id}
+                                    className={cn(
+                                        'h-full bg-red-500/20 border-2 border-red-500',
+                                        'flex items-center justify-center text-xs text-center p-1',
+                                        'absolute'
+                                    )}
+                                    style={{
+                                       left: `${(clip.start / duration) * timelineWidth}px`,
+                                       width: `${(clip.duration / duration) * timelineWidth}px`,
+                                    }}
+                                >
+                                     <span className="truncate">Voix Off</span>
+                                </div>
+                                ))}
+                           </div>
+                        </div>
                     </div>
                 </div>
 
@@ -558,9 +669,43 @@ export default function EditVideoPage() {
                   </DialogContent>
                 </Dialog>
                 
-                <Button className="w-full justify-start" disabled>
-                  <Mic className="mr-2 h-4 w-4" /> Ajouter une Voix Off
-                </Button>
+                <Dialog open={isVoiceOverDialogOpen} onOpenChange={setIsVoiceOverDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="w-full justify-start" disabled={!videoSrc}>
+                        <Mic className="mr-2 h-4 w-4" /> Ajouter une Voix Off
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Ajouter une Voix Off</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4 space-y-4 text-center">
+                        <p className="text-sm text-muted-foreground">
+                           L'enregistrement commencera à la position actuelle de la tête de lecture: {formatTime(currentTime)}.
+                        </p>
+                         {!isRecording ? (
+                            <Button size="lg" onClick={handleStartRecording}>
+                                <Circle className="mr-2 h-4 w-4 fill-red-500 text-red-500" />
+                                Démarrer l'enregistrement
+                            </Button>
+                         ) : (
+                            <Button size="lg" onClick={handleStopRecording} variant="destructive">
+                                <Square className="mr-2 h-4 w-4 fill-white" />
+                                Arrêter l'enregistrement
+                            </Button>
+                         )}
+                         {isRecording && (
+                            <p className="text-sm text-red-500 animate-pulse">Enregistrement en cours...</p>
+                         )}
+                    </div>
+                    <DialogFooter>
+                      <DialogClose asChild>
+                         <Button variant="ghost">Fermer</Button>
+                      </DialogClose>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+
               </CardContent>
             </Card>
             <Button className="w-full" size="lg" disabled>
@@ -573,7 +718,3 @@ export default function EditVideoPage() {
     </div>
   );
 }
-
-    
-
-    
