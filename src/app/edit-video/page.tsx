@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -16,6 +17,8 @@ import {
   Pause,
   Clock,
   Download,
+  Video,
+  Music,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -97,6 +100,7 @@ export default function EditVideoPage() {
   };
 
   const formatTime = (time: number) => {
+    if (isNaN(time)) return '0:00';
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60).toString().padStart(2, '0');
     return `${minutes}:${seconds}`;
@@ -145,6 +149,8 @@ export default function EditVideoPage() {
         description: `Le clip a été scindé à ${formatTime(splitTime)}.`,
       });
   };
+  
+  const timelineWidth = 1000; // Fixed width for timeline for now
 
   return (
     <div className="container mx-auto p-4 space-y-8">
@@ -216,29 +222,76 @@ export default function EditVideoPage() {
               <CardHeader>
                 <CardTitle>Timeline</CardTitle>
               </CardHeader>
-              <CardContent className="h-40 bg-muted rounded-md p-2 flex items-center gap-1 overflow-x-auto">
-                {clips.length > 0 ? (
-                  clips.map((clip) => (
+              <CardContent className="overflow-x-auto pb-4">
+                <div className="relative" style={{ width: `${timelineWidth}px`}}>
+                    {/* Playhead */}
                     <div
-                      key={clip.id}
-                      onClick={() => setActiveClip(clip)}
-                      className={cn(
-                        'h-20 bg-primary/20 rounded-md border-2 border-transparent cursor-pointer hover:border-primary',
-                        'flex items-center justify-center text-xs text-center p-1',
-                        {
-                          'border-primary bg-primary/40': activeClip?.id === clip.id,
-                        }
-                      )}
-                      style={{ width: `${(clip.duration / duration) * 100}%` }}
+                        className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-10"
+                        style={{ left: `${(currentTime / duration) * timelineWidth}px` }}
                     >
-                      <span className="truncate">Clip<br/>{formatTime(clip.duration)}</span>
+                         <div className="absolute -top-2 -translate-x-1/2 h-4 w-4 bg-red-500 rounded-full"></div>
                     </div>
-                  ))
-                ) : (
-                  <p className="text-muted-foreground text-center w-full">
-                    La timeline apparaîtra ici.
-                  </p>
-                )}
+                    
+                    {/* Tracks */}
+                    <div className="space-y-2 pt-4">
+                        {/* Video Track */}
+                        <div className="flex items-center gap-2">
+                           <div className="w-24 text-xs font-semibold flex items-center gap-1">
+                               <Video className="h-4 w-4" />
+                               <span>Piste Vidéo</span>
+                           </div>
+                           <div className="h-20 bg-muted rounded-md flex-1 relative flex items-center">
+                               {clips.map((clip) => (
+                                <div
+                                    key={clip.id}
+                                    onClick={() => setActiveClip(clip)}
+                                    className={cn(
+                                    'h-full bg-primary/20 border-2 border-transparent cursor-pointer hover:border-primary',
+                                    'flex items-center justify-center text-xs text-center p-1',
+                                    'absolute',
+                                    {
+                                        'border-primary bg-primary/40': activeClip?.id === clip.id,
+                                    }
+                                    )}
+                                    style={{
+                                       left: `${(clip.start / duration) * timelineWidth}px`,
+                                       width: `${(clip.duration / duration) * timelineWidth}px`,
+                                    }}
+                                >
+                                    <span className="truncate">Clip Vidéo<br/>{formatTime(clip.duration)}</span>
+                                </div>
+                                ))}
+                           </div>
+                        </div>
+
+                        {/* Audio Track */}
+                        <div className="flex items-center gap-2">
+                           <div className="w-24 text-xs font-semibold flex items-center gap-1">
+                               <Music className="h-4 w-4" />
+                               <span>Piste Audio</span>
+                           </div>
+                           <div className="h-12 bg-muted rounded-md flex-1 relative flex items-center">
+                               {clips.map((clip) => (
+                                <div
+                                    key={`audio-${clip.id}`}
+                                    className={cn(
+                                    'h-full bg-green-500/20',
+                                    'flex items-center justify-center text-xs text-center p-1',
+                                    'absolute'
+                                    )}
+                                    style={{
+                                       left: `${(clip.start / duration) * timelineWidth}px`,
+                                       width: `${(clip.duration / duration) * timelineWidth}px`,
+                                    }}
+                                >
+                                </div>
+                                ))}
+                                <span className="text-muted-foreground text-xs italic pl-2">Piste audio originale</span>
+                           </div>
+                        </div>
+                    </div>
+                </div>
+
               </CardContent>
             </Card>
           </div>
@@ -272,4 +325,5 @@ export default function EditVideoPage() {
       )}
     </div>
   );
-}
+
+    
