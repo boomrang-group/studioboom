@@ -37,7 +37,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { FFmpeg } from '@ffmpeg/ffmpeg';
+import type { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile, toBlobURL } from '@ffmpeg/util';
 
 
@@ -107,6 +107,7 @@ export default function EditVideoPage() {
 
   useEffect(() => {
     const loadFfmpeg = async () => {
+        const { FFmpeg } = await import('@ffmpeg/ffmpeg');
         const ffmpegInstance = new FFmpeg();
         ffmpegInstance.on('log', ({ message }) => {
             console.log(message);
@@ -792,3 +793,5 @@ export default function EditVideoPage() {
     </div>
   );
 }
+
+    
