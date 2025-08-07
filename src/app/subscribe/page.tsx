@@ -10,7 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 
 const premiumFeatures = [
@@ -59,6 +59,24 @@ export default function SubscribePage() {
           Créez, exportez et partagez sans limites.
         </p>
       </div>
+
+      <Card className="max-w-md mx-auto border-primary border-2 shadow-lg">
+        <CardHeader className="text-center">
+            <div className="mx-auto bg-primary/10 rounded-full h-16 w-16 flex items-center justify-center mb-4">
+                <Sparkles className="h-8 w-8 text-primary"/>
+            </div>
+            <CardTitle className="text-2xl font-headline">Essayez Premium Gratuitement</CardTitle>
+            <CardDescription>
+                Profitez de 7 jours d'essai gratuit. Annulez à tout moment. Après 7 jours, l'abonnement mensuel de 7$ s'appliquera.
+            </CardDescription>
+        </CardHeader>
+        <CardFooter>
+            <Button className="w-full" size="lg" asChild>
+                 <Link href={`/checkout?plan=Mensuel (Essai Gratuit)&price=7`}>Démarrer mon essai gratuit</Link>
+            </Button>
+        </CardFooter>
+      </Card>
+
 
       <Card className="max-w-4xl mx-auto">
         <CardHeader>
