@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -92,6 +93,7 @@ function Header({ children }: { children: React.ReactNode }) {
 }
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   return (
     <SidebarProvider>
       <Sidebar>
@@ -116,12 +118,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <SidebarFooter>
           <SidebarMenu>
             <SidebarMenuItem>
-              <div className="p-2">
-                <Button className="w-full justify-start" variant="outline">
-                  <CircleUser className="mr-2" />
-                  Mon Compte
-                </Button>
-              </div>
+               <SidebarMenuButton asChild isActive={pathname === '/account'}>
+                  <Link href="/account">
+                    <CircleUser />
+                    <span>Mon Compte</span>
+                  </Link>
+                </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarFooter>
