@@ -1,0 +1,59 @@
+diff --git a/node_modules/@ffmpeg/ffmpeg/dist/esm/classes.js b/node_modules/@ffmpeg/ffmpeg/dist/esm/classes.js
+index 9e24629..b367123 100644
+--- a/node_modules/@ffmpeg/ffmpeg/dist/esm/classes.js
++++ b/node_modules/@ffmpeg/ffmpeg/dist/esm/classes.js
+@@ -102,9 +102,7 @@
+         this.config = { ...DEFAULT_CONFIG, ...config };
+         if (!this.#worker) {
+             this.#worker = classWorkerURL ?
+-                new Worker(new URL(classWorkerURL, import.meta.url), {
+-                    type: "module",
+-                }) :
++                new Worker(classWorkerURL, { type: "module" }) :
+                 // We need to duplicated the code here to enable webpack
+                 // to parse the code and extract the worker code.
+                 // Right now, webpack does not support syntax like:
+diff --git a/node_modules/@ffmpeg/ffmpeg/dist/esm/ffmpeg.js b/node_modules/@ffmpeg/ffmpeg/dist/esm/ffmpeg.js
+index 773f328..12e3f53 100644
+--- a/node_modules/@ffmpeg/ffmpeg/dist/esm/ffmpeg.js
++++ b/node_modules/@ffmpeg/ffmpeg/dist/esm/ffmpeg.js
+@@ -103,7 +103,11 @@
+             coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
+             wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
+             workerURL: await toBlobURL(`${baseURL}/ffmpeg-core.worker.js`, "text/javascript"),
+-        });
++        }, options);
++    }
++    // Fix for Next.js
++    getCoreURL(options) {
++      return options.coreURL;
+     }
+     on(event, callback) {
+         if (event === "log") {
+diff --git a/node_modules/@ffmpeg/ffmpeg/dist/esm/ffmpeg.d.ts b/node_modules/@ffmpeg/ffmpeg/dist/esm/ffmpeg.d.ts
+index c6db394..510eb3b 100644
+--- a/node_modules/@ffmpeg/ffmpeg/dist/esm/ffmpeg.d.ts
++++ b/node_modules/@ffmpeg/ffmpeg/dist/esm/ffmpeg.d.ts
+@@ -1,6 +1,7 @@
+ import type { LogEvent, ProgressEvent } from "./types";
+ import { AbstractFFmpeg } from "./classes";
+-export declare class FFmpeg extends AbstractFFmpeg {
++export declare class FFmpeg extends AbstractFFmpeg { 
+     load(config?: Partial<import("./types").FFMessageLoadConfig>): Promise<void>;
++    getCoreURL(options: any): any;
+     on(event: "log" | "progress", callback: (event: LogEvent | ProgressEvent) => void): void;
+ }
+diff --git a/node_modules/@ffmpeg/ffmpeg/package.json b/node_modules/@ffmpeg/ffmpeg/package.json
+index 38bfa78..4b48b6c 100644
+--- a/node_modules/@ffmpeg/ffmpeg/package.json
++++ b/node_modules/@ffmpeg/ffmpeg/package.json
+@@ -60,6 +60,9 @@
+   "funding": {
+     "type": "github",
+     "url": "https://github.com/sponsors/jeromewu"
++  },
++  "np_resolution": {
++    "assert": "2.0.0"
+   }
+ }
+ 

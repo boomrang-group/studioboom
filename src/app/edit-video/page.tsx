@@ -102,7 +102,7 @@ export default function EditVideoPage() {
   // FFmpeg state
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
-  const [ffmpeg, setFfmpeg] = useState<FFmpeg | null>(null);
+  const ffmpegRef = useRef<FFmpeg | null>(null);
   const [ffmpegLoaded, setFfmpegLoaded] = useState(false);
 
   useEffect(() => {
@@ -117,12 +117,16 @@ export default function EditVideoPage() {
 
         const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd'
 
-        await ffmpegInstance.load({
-            coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-            wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-        });
-        setFfmpeg(ffmpegInstance);
-        setFfmpegLoaded(true);
+        try {
+            await ffmpegInstance.load({
+                coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+                wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+            });
+            ffmpegRef.current = ffmpegInstance;
+            setFfmpegLoaded(true);
+        } catch(e) {
+            console.error(e);
+        }
     };
     loadFfmpeg();
   }, []);
@@ -359,6 +363,7 @@ export default function EditVideoPage() {
 
 
   const handleExport = async () => {
+    const ffmpeg = ffmpegRef.current;
     if (!ffmpeg || !ffmpegLoaded || clips.length === 0) {
         toast({ title: 'Erreur', description: 'FFmpeg n\'est pas chargé ou aucune vidéo n\'a été importée.', variant: 'destructive' });
         return;
