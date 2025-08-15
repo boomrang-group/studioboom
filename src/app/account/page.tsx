@@ -41,7 +41,7 @@ export default function AccountPage() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="email">Adresse e-mail</Label>
-            <Input id="email" type="email" defaultValue="jean.dupont@email.com" />
+            <Input id="email" type="email" defaultValue="jean.dupont@email.com" readOnly/>
           </div>
         </CardContent>
         <CardFooter>
