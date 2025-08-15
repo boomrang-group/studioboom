@@ -93,48 +93,49 @@ export default function GenerateQuizPage() {
   const handleExportCSV = () => {
     if (!quizData) return;
 
-    // Defines the headers of the CSV
-    // It handles multiple choice (4 options), true/false (2 options), and short answers (0 options)
-    const headers = ["question"];
-    const maxOptions = Math.max(...quizData.questions.map(q => q.options.length));
-    for (let i = 1; i <= maxOptions; i++) {
-        headers.push(`option${i}`);
-    }
-    headers.push("answer");
-    
+    const headers = ['question', 'choice_a', 'choice_b', 'choice_c', 'choice_d', 'correct'];
     const csvRows = [headers.join(',')];
 
-    // Creates a row for each question
     quizData.questions.forEach(q => {
-      const escapedQuestion = `"${q.question.replace(/"/g, '""')}"`;
-      const escapedOptions = q.options.map(opt => `"${opt.replace(/"/g, '""')}"`);
-      const paddedOptions = [
-          ...escapedOptions,
-          ...Array(maxOptions - q.options.length).fill('')
-      ]
-      const escapedAnswer = `"${q.answer.replace(/"/g, '""')}"`;
+        const escapedQuestion = `"${q.question.replace(/"/g, '""')}"`;
+        
+        let options = ['', '', '', ''];
+        if (q.options.length > 0) {
+            q.options.slice(0, 4).forEach((opt, i) => {
+                options[i] = `"${opt.replace(/"/g, '""')}"`;
+            });
+        }
 
-      const row = [escapedQuestion, ...paddedOptions, escapedAnswer];
-      csvRows.push(row.join(','));
+        // The AI sometimes returns the full answer text, sometimes the option letter (A, B, C, D).
+        // We try to find the corresponding letter.
+        const correctOptionIndex = q.options.findIndex(opt => opt.toLowerCase().trim() === q.answer.toLowerCase().trim());
+        let correctLetter = q.answer;
+        if (correctOptionIndex !== -1) {
+            correctLetter = String.fromCharCode(65 + correctOptionIndex); // A, B, C, D...
+        }
+        
+        const escapedAnswer = `"${correctLetter.replace(/"/g, '""')}"`;
+
+        const row = [escapedQuestion, ...options, escapedAnswer];
+        csvRows.push(row.join(','));
     });
 
     const csvContent = csvRows.join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
-    if (link.href) {
-      URL.revokeObjectURL(link.href);
-    }
     const url = URL.createObjectURL(blob);
     link.href = url;
-    link.setAttribute('download', 'quiz.csv');
+    link.setAttribute('download', 'quiz_export.csv');
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-     toast({
+    URL.revokeObjectURL(url);
+
+    toast({
         title: 'Exportation réussie',
         description: 'Le quiz a été téléchargé en tant que fichier CSV.',
-      });
-  };
+    });
+};
 
   return (
     <div className="space-y-8">
