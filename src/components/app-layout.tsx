@@ -31,6 +31,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Button } from './ui/button';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase';
+import Image from 'next/image';
 
 function SidebarNavigation() {
   const pathname = usePathname();
@@ -138,9 +139,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <Sidebar>
         <SidebarHeader className="p-4">
           <div className="flex items-center gap-2">
-           <div className="flex items-center justify-center h-8 w-8 rounded-full bg-green-700 text-white">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5"><path d="m16 13 5.223 3.482a.5.5 0 0 1 0 .836L16 20.8V13Z"/><path d="M4 12h8"/><path d="M4 18h8"/><path d="m12 12-4 4-4-4"/><path d="M12 18a2 2 0 0 0-2-2 2 2 0 0 0-2 2 2 2 0 0 0 2 2 2 2 0 0 0 2-2Z"/></svg>
-           </div>
+           <Image src="https://placehold.co/32x32.png" alt="Studio BoomRang Logo" width={32} height={32} className="rounded-full" data-ai-hint="logo camera" />
             <h2 className="text-xl font-bold font-headline text-primary">
               Studio BoomRang
             </h2>
