@@ -6,7 +6,7 @@ import './globals.css';
 import { AuthProvider } from '@/hooks/use-auth';
 
 export const metadata: Metadata = {
-  title: 'Kelasi Studio',
+  title: 'Studio BoomRang',
   description: "L'assistant pédagogique tout-en-un pour les enseignants",
 };
 

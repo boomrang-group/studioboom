@@ -1,6 +1,6 @@
-# Kelasi Studio
+# Studio BoomRang
 
-This is a Next.js project for Kelasi Studio, a platform for educators to create and manage educational content.
+This is a Next.js project for Studio BoomRang, a platform for educators to create and manage educational content.
 
 ## Core Features:
 
@@ -23,3 +23,4 @@ pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+

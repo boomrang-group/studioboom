@@ -93,7 +93,7 @@ export default function SignupPage() {
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-headline">Créer un compte</CardTitle>
           <CardDescription>
-            Rejoignez Kelasi Studio pour commencer à créer.
+            Rejoignez Studio BoomRang pour commencer à créer.
           </CardDescription>
         </CardHeader>
         <CardContent>
