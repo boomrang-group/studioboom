@@ -23,10 +23,14 @@ import {
   CircleUser,
   Crown,
   Film,
+  LogIn,
+  LogOut,
 } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Button } from './ui/button';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '@/lib/firebase';
 
 function SidebarNavigation() {
   const pathname = usePathname();
@@ -85,15 +89,50 @@ function SidebarNavigation() {
 }
 
 function Header({ children }: { children: React.ReactNode }) {
-  return (
-    <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
-      {children}
-    </header>
-  );
+    const [user, loading] = useAuthState(auth);
+    const router = useRouter();
+
+    const handleSignOut = async () => {
+        await auth.signOut();
+        router.push('/login');
+    }
+
+    return (
+        <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
+        {children}
+        <div className="flex-1 text-right">
+            {loading ? (
+                <div />
+            ) : user ? (
+                <Button asChild>
+                    <Link href="/subscribe">
+                        <Crown className="mr-2 h-4 w-4" />
+                        Passer au Premium
+                    </Link>
+                </Button>
+            ) : (
+                <Button asChild variant="outline">
+                    <Link href="/login">
+                        <LogIn className="mr-2 h-4 w-4" />
+                        Se connecter
+                    </Link>
+                </Button>
+            )}
+        </div>
+        </header>
+    );
 }
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const [user] = useAuthState(auth);
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    await auth.signOut();
+    router.push('/login');
+  };
+
   return (
     <SidebarProvider>
       <Sidebar>
@@ -117,13 +156,30 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </SidebarContent>
         <SidebarFooter>
           <SidebarMenu>
-            <SidebarMenuItem>
-               <SidebarMenuButton asChild isActive={pathname === '/account'}>
-                  <Link href="/account">
-                    <CircleUser />
-                    <span>Mon Compte</span>
-                  </Link>
-                </SidebarMenuButton>
+            {user && (
+                 <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={pathname === '/account'}>
+                        <Link href="/account">
+                            <CircleUser />
+                            <span>Mon Compte</span>
+                        </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+            )}
+             <SidebarMenuItem>
+                {user ? (
+                    <SidebarMenuButton onClick={handleSignOut}>
+                        <LogOut/>
+                        <span>Se déconnecter</span>
+                    </SidebarMenuButton>
+                ) : (
+                     <SidebarMenuButton asChild isActive={pathname === '/login'}>
+                        <Link href="/login">
+                            <LogIn/>
+                            <span>Se connecter</span>
+                        </Link>
+                    </SidebarMenuButton>
+                )}
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarFooter>
@@ -131,14 +187,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <SidebarInset>
         <Header>
           <SidebarTrigger className="md:hidden" />
-          <div className="flex-1 text-right">
-            <Button asChild>
-              <Link href="/subscribe">
-                <Crown className="mr-2 h-4 w-4" />
-                Passer au Premium
-              </Link>
-            </Button>
-          </div>
         </Header>
         <main className="flex-1 p-4 md:p-6">{children}</main>
       </SidebarInset>
