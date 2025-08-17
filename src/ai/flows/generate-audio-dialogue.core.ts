@@ -1,10 +1,6 @@
-'use server';
 /**
- * Converts a text summary into a 2-voice audio dialogue.
- * - Input: { summary: string }
- * - Output: { media: dataURL<string audio/*> }
+ * @fileOverview Core logic for generating an audio dialogue from text.
  */
-
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { googleAI } from '@genkit-ai/googleai';
