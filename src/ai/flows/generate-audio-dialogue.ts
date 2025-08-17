@@ -12,7 +12,7 @@ import { Buffer } from 'node:buffer';
 import wav from 'wav';
 
 // -------- Types
-export const GenerateAudioDialogueInputSchema = z.object({
+const GenerateAudioDialogueInputSchema = z.object({
   summary: z.string().min(1, 'Summary input cannot be empty.'),
 });
 export type GenerateAudioDialogueInput = z.infer<typeof GenerateAudioDialogueInputSchema>;
@@ -79,7 +79,7 @@ Text:
 });
 
 // -------- Flow
-export const generateAudioDialogueFlow = ai.defineFlow(
+const generateAudioDialogueFlow = ai.defineFlow(
   {
     name: 'generateAudioDialogueFlow',
     inputSchema: GenerateAudioDialogueInputSchema, // <- évite l'erreur "must be string" côté Studio si input vide
