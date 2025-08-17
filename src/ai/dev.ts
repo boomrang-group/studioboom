@@ -7,4 +7,4 @@ import '@/ai/flows/generate-video-script.ts';
 import '@/ai/flows/generate-quiz.ts';
 import '@/ai/flows/summarize-document.ts';
 import '@/ai/flows/generate-audio-summary.ts';
-import '@/ai/flows/generate-audio-dialogue.ts';
+import '@/ai/flows/generate-audio-dialogue.core.ts';

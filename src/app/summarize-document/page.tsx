@@ -192,11 +192,11 @@ export default function SummarizeDocumentPage() {
           </CardContent>
           <CardFooter className="flex-col items-start gap-4">
             <div className="flex flex-wrap gap-2">
-                <Button onClick={handleGenerateAudio} disabled={isAudioLoading}>
+                <Button onClick={handleGenerateAudio} disabled={isAudioLoading || !summary.trim()}>
                     {isAudioLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Podcast className="mr-2 h-4 w-4" />}
                     Générer un résumé audio
                 </Button>
-                <Button onClick={handleGenerateDialogue} disabled={isDialogueLoading}>
+                <Button onClick={handleGenerateDialogue} disabled={isDialogueLoading || !summary.trim()}>
                     {isDialogueLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Users className="mr-2 h-4 w-4" />}
                     Générer un dialogue audio
                 </Button>
