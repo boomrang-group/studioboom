@@ -52,10 +52,10 @@ export default function SubscribePage() {
     <div className="space-y-12">
       <div className="text-center">
         <h1 className="font-headline text-4xl md:text-5xl font-bold">
-          Passez à Kelasi Studio Premium
+          Passez à Studio BoomRang Premium
         </h1>
         <p className="text-muted-foreground mt-4 max-w-2xl mx-auto">
-          Débloquez tout le potentiel de Kelasi Studio avec nos offres Premium.
+          Débloquez tout le potentiel de Studio BoomRang avec nos offres Premium.
           Créez, exportez et partagez sans limites.
         </p>
       </div>

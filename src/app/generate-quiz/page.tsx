@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -6,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { generateQuiz, type GenerateQuizOutput } from '@/ai/flows/generate-quiz';
 import Link from 'next/link';
+import { useAuth } from '@/hooks/use-auth';
 
 import {
   Form,
@@ -26,8 +28,10 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Loader2, Share2, ClipboardCopy } from 'lucide-react';
+import { Loader2, Share2, ClipboardCopy, Crown, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const formSchema = z.object({
   lessonText: z.string().min(50, 'Le texte de la leçon doit contenir au moins 50 caractères.'),
@@ -40,6 +44,8 @@ export default function GenerateQuizPage() {
   const [quizData, setQuizData] = useState<GenerateQuizOutput | null>(null);
   const [quizLink, setQuizLink] = useState('');
   const { toast } = useToast();
+  const { userData, loading: authLoading } = useAuth();
+
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -83,6 +89,52 @@ export default function GenerateQuizPage() {
         description: 'Le lien du quiz a été copié dans le presse-papiers.'
     })
   }
+  
+  const handleExportCSV = () => {
+    if (!quizData) return;
+
+    const headers = ['question', 'choice_a', 'choice_b', 'choice_c', 'choice_d', 'correct'];
+    const csvRows = [headers.join(',')];
+
+    quizData.questions.forEach(q => {
+        const escapedQuestion = `"${q.question.replace(/"/g, '""')}"`;
+        
+        let options = ['', '', '', ''];
+        if (q.options.length > 0) {
+            q.options.slice(0, 4).forEach((opt, i) => {
+                options[i] = `"${opt.replace(/"/g, '""')}"`;
+            });
+        }
+
+        const correctOptionIndex = q.options.findIndex(opt => opt.toLowerCase().trim() === q.answer.toLowerCase().trim());
+        let correctLetter = q.answer;
+        if (correctOptionIndex !== -1) {
+            correctLetter = String.fromCharCode(65 + correctOptionIndex); // A, B, C, D...
+        }
+        
+        const escapedAnswer = `"${correctLetter.replace(/"/g, '""')}"`;
+
+        const row = [escapedQuestion, ...options, escapedAnswer];
+        csvRows.push(row.join(','));
+    });
+
+    const csvContent = csvRows.join('\n');
+    const bom = new Uint8Array([0xEF, 0xBB, 0xBF]); // UTF-8 BOM
+    const blob = new Blob([bom, csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.href = url;
+    link.setAttribute('download', 'quiz_export.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast({
+        title: 'Exportation réussie',
+        description: 'Le quiz a été téléchargé en tant que fichier CSV.',
+    });
+};
 
   return (
     <div className="space-y-8">
@@ -198,18 +250,43 @@ export default function GenerateQuizPage() {
              </div>
           </CardContent>
            <CardFooter className="flex-col items-start gap-4">
-            <h3 className="font-semibold">Partager le quiz interactif</h3>
-             <div className="flex w-full items-center space-x-2">
-                <Input value={quizLink} readOnly />
-                <Button variant="outline" size="icon" onClick={copyToClipboard}>
-                    <ClipboardCopy className="h-4 w-4" />
-                </Button>
-             </div>
-             <Button asChild>
-                <Link href={quizLink} target="_blank">
-                    Ouvrir le quiz interactif <Share2 className="ml-2 h-4 w-4"/>
-                </Link>
-             </Button>
+            <div>
+              <h3 className="font-semibold">Partager le quiz interactif</h3>
+              <div className="flex w-full items-center space-x-2 mt-2">
+                  <Input value={quizLink} readOnly />
+                  <Button variant="outline" size="icon" onClick={copyToClipboard}>
+                      <ClipboardCopy className="h-4 w-4" />
+                  </Button>
+              </div>
+              <Button asChild className="mt-2">
+                  <Link href={quizLink} target="_blank">
+                      Ouvrir le quiz interactif <Share2 className="ml-2 h-4 w-4"/>
+                  </Link>
+              </Button>
+            </div>
+            
+            <Separator className="my-2"/>
+
+            <div>
+              <h3 className="font-semibold">Exporter le quiz</h3>
+              <div className="mt-2">
+                { authLoading ? (
+                    <Skeleton className="h-10 w-40" />
+                ) : userData?.subscription?.plan !== 'gratuit' ? (
+                    <Button variant="outline" onClick={handleExportCSV}>
+                        <Download className="mr-2 h-4 w-4"/>
+                        Exporter en CSV
+                    </Button>
+                ) : (
+                    <Button variant="outline" asChild>
+                        <Link href="/subscribe">
+                            <Crown className="mr-2 h-4 w-4 text-amber-500" />
+                            Exporter en CSV (Premium)
+                        </Link>
+                    </Button>
+                )}
+              </div>
+            </div>
            </CardFooter>
         </Card>
       )}

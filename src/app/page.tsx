@@ -64,7 +64,7 @@ export default function DashboardPage() {
           Tableau de bord
         </h1>
         <p className="text-muted-foreground">
-          Bienvenue sur Kelasi Studio ! Choisissez un outil pour commencer.
+          Bienvenue sur Studio BoomRang ! Choisissez un outil pour commencer.
         </p>
       </div>
 

@@ -73,7 +73,7 @@ export default function GenerateCoursePage() {
         format: [canvas.width, canvas.height],
       });
       pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-      pdf.save('cours-kelasi.pdf');
+      pdf.save('cours-studio-boomrang.pdf');
       toast({ title: 'Succès', description: 'Le PDF a été téléchargé.' });
     } catch (error) {
       console.error('Export PDF error:', error);

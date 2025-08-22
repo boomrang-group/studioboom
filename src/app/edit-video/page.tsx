@@ -376,7 +376,7 @@ export default function EditVideoPage() {
 
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'kelasi-video-export.mp4';
+      a.download = 'studio-boomrang-video-export.mp4';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
