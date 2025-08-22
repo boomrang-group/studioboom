@@ -218,7 +218,7 @@ function CheckoutForm() {
               <CardContent>
                 <Form {...mobileMoneyForm}>
                   <form
-                    action={process.env.NEXT_PUBLIC_MAXICASH_API_URL}
+                    action={process.env.MAXICASH_API_URL}
                     method="POST"
                     className="space-y-4"
                   >
@@ -226,8 +226,8 @@ function CheckoutForm() {
                     <input type="hidden" name="PayType" value="MaxiCash" />
                     <input type="hidden" name="Amount" value={amountInCents} />
                     <input type="hidden" name="Currency" value="USD" />
-                    <input type="hidden" name="MerchantID" value={process.env.NEXT_PUBLIC_MAXICASH_MERCHANT_ID} />
-                    <input type="hidden" name="MerchantPassword" value={process.env.NEXT_PUBLIC_MAXICASH_MERCHANT_PASSWORD} />
+                    <input type="hidden" name="MerchantID" value={process.env.MAXICASH_MERCHANT_ID} />
+                    <input type="hidden" name="MerchantPassword" value={process.env.MAXICASH_MERCHANT_PASSWORD} />
                     <input type="hidden" name="Language" value="fr" />
                     <input type="hidden" name="Reference" value={transactionReference} />
                     <input type="hidden" name="accepturl" value={acceptUrl} />
