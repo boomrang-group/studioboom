@@ -13,10 +13,10 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'placehold.co',
+        hostname: 'www.boomrang-group.com',
         port: '',
         pathname: '/**',
-      },
+      }
     ],
   },
   webpack: (config, { isServer }) => {
