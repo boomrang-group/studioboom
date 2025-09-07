@@ -44,7 +44,10 @@ export default function GenerateQuizPage() {
   const [quizData, setQuizData] = useState<GenerateQuizOutput | null>(null);
   const [quizLink, setQuizLink] = useState('');
   const { toast } = useToast();
-  const { userData, loading: authLoading } = useAuth();
+  const { isSubscribed, loading: authLoading, userData } = useAuth();
+  
+  const credits = userData?.subscription?.credits;
+  const isPayAsYouGo = userData?.subscription?.plan === 'Pay-As-You-Go';
 
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -70,11 +73,11 @@ export default function GenerateQuizPage() {
       const link = `${window.location.origin}/quiz/${Date.now()}?data=${encodeURIComponent(encodedData)}`;
       setQuizLink(link);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       toast({
         title: 'Erreur',
-        description: 'Une erreur est survenue lors de la génération du quiz.',
+        description: error.message || 'Une erreur est survenue lors de la génération du quiz.',
         variant: 'destructive',
       });
     } finally {
@@ -146,6 +149,14 @@ export default function GenerateQuizPage() {
           Créez des évaluations rapidement à partir de votre contenu de cours.
         </p>
       </div>
+
+      {isPayAsYouGo && (
+        <Card>
+            <CardContent className="pt-6">
+                <p className="text-center text-muted-foreground">Crédits restants : <span className="font-bold text-primary">{credits ?? 0}</span></p>
+            </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
@@ -272,7 +283,7 @@ export default function GenerateQuizPage() {
               <div className="mt-2">
                 { authLoading ? (
                     <Skeleton className="h-10 w-40" />
-                ) : userData?.subscription?.plan !== 'gratuit' ? (
+                ) : isSubscribed ? (
                     <Button variant="outline" onClick={handleExportCSV}>
                         <Download className="mr-2 h-4 w-4"/>
                         Exporter en CSV

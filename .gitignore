@@ -4,17 +4,9 @@
 /node_modules
 /.pnp
 .pnp.js
-.yarn/install-state.gz
 
-# Local Environment Variables
-.env*.local
-.env
-
-# Logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
+# Testing
+/coverage
 
 # Next.js
 /.next/
@@ -23,7 +15,25 @@ pnpm-debug.log*
 # Production
 /build
 
-# Other
+# Misc
 .DS_Store
 *.pem
-*.tsbuildinfo
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Local .env file
+.env
+.env*.local
+
+# Editor directories and files
+.vscode
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Loader2, FileUp, FileCheck, Podcast, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/use-auth';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_FILE_TYPES = ['application/pdf', 'text/plain'];
@@ -54,6 +55,10 @@ export default function SummarizeDocumentPage() {
   const [audioDialogue, setAudioDialogue] = useState<string | null>(null);
   const [fileName, setFileName] = useState('');
   const { toast } = useToast();
+  const { userData } = useAuth();
+  
+  const credits = userData?.subscription?.credits;
+  const isPayAsYouGo = userData?.subscription?.plan === 'Pay-As-You-Go';
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -65,6 +70,7 @@ export default function SummarizeDocumentPage() {
     setSummary('');
     setAudioSummary(null);
     setAudioDialogue(null);
+    setFileName('');
 
     try {
       const file = values.document[0];
@@ -72,11 +78,11 @@ export default function SummarizeDocumentPage() {
       const result = await summarizeDocument({ documentDataUri });
       setSummary(result.summary);
       setFileName(file.name);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       toast({
         title: 'Erreur',
-        description: 'Une erreur est survenue lors de la synthèse du document.',
+        description: error.message || 'Une erreur est survenue lors de la synthèse du document.',
         variant: 'destructive',
       });
     } finally {
@@ -118,7 +124,7 @@ export default function SummarizeDocumentPage() {
             title: 'Succès',
             description: 'Le dialogue audio a été généré.'
           });
-      } catch (error) {
+      } catch (error: any) {
           console.error(error);
           toast({
             title: 'Erreur de dialogue',
@@ -140,6 +146,14 @@ export default function SummarizeDocumentPage() {
           Importez un document et obtenez un résumé concis en quelques instants.
         </p>
       </div>
+
+       {isPayAsYouGo && (
+        <Card>
+            <CardContent className="pt-6">
+                <p className="text-center text-muted-foreground">Crédits restants : <span className="font-bold text-primary">{credits ?? 0}</span></p>
+            </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
@@ -169,7 +183,7 @@ export default function SummarizeDocumentPage() {
               />
               <Button type="submit" disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Générer la synthèse
+                {isLoading ? 'Analyse du document...' : 'Générer la synthèse'}
               </Button>
             </form>
           </Form>

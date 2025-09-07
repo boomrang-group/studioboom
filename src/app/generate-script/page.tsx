@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -20,6 +21,7 @@ import { Loader2, Download, Crown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
 import Link from 'next/link';
+import { useAuth } from '@/hooks/use-auth';
 
 const formSchema = z.object({
   topic: z.string().min(10, 'Le sujet doit contenir au moins 10 caractères.'),
@@ -31,6 +33,11 @@ export default function GenerateScriptPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [scriptContent, setScriptContent] = useState('');
   const { toast } = useToast();
+  const { userData } = useAuth();
+  
+  const credits = userData?.subscription?.credits;
+  const isPayAsYouGo = userData?.subscription?.plan === 'Pay-As-You-Go';
+
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -47,11 +54,11 @@ export default function GenerateScriptPage() {
     try {
       const result = await generateVideoScript(values);
       setScriptContent(result.script);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       toast({
         title: 'Erreur',
-        description: 'Une erreur est survenue lors de la génération du script.',
+        description: error.message || 'Une erreur est survenue lors de la génération du script.',
         variant: 'destructive',
       });
     } finally {
@@ -69,6 +76,14 @@ export default function GenerateScriptPage() {
           Transformez vos idées de leçons en scripts vidéo prêts à être tournés.
         </p>
       </div>
+
+       {isPayAsYouGo && (
+        <Card>
+            <CardContent className="pt-6">
+                <p className="text-center text-muted-foreground">Crédits restants : <span className="font-bold text-primary">{credits ?? 0}</span></p>
+            </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

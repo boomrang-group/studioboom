@@ -1,21 +1,90 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import Confetti from 'react-confetti';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { useAuth } from '@/hooks/use-auth';
+import { updateSubscription } from '@/lib/actions/update-subscription';
+import { useToast } from '@/hooks/use-toast';
 
-export default function ConfirmationPage() {
+function ConfirmationContent() {
   const [showConfetti, setShowConfetti] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const searchParams = useSearchParams();
+  const { user, loading } = useAuth();
+  const { toast } = useToast();
 
   useEffect(() => {
-    setShowConfetti(true);
-    const timer = setTimeout(() => setShowConfetti(false), 8000); // Stop confetti after 8 seconds
-    return () => clearTimeout(timer);
-  }, []);
+    const plan = searchParams.get('plan');
+
+    if (loading) {
+      return;
+    }
+
+    if (!user || !plan) {
+      setError("Impossible de mettre à jour l'abonnement. L'utilisateur ou le plan est manquant.");
+      setIsUpdating(false);
+      return;
+    }
+    
+    const performUpdate = async () => {
+        try {
+            await updateSubscription({ userId: user.uid, newPlan: plan });
+            setShowConfetti(true);
+            const timer = setTimeout(() => setShowConfetti(false), 8000); // Stop confetti after 8 seconds
+            return () => clearTimeout(timer);
+        } catch (err: any) {
+             toast({
+                title: 'Erreur de mise à jour',
+                description: err.message || "Une erreur est survenue lors de la mise à jour de l'abonnement.",
+                variant: 'destructive',
+            });
+            setError("Une erreur est survenue lors de la mise à jour de votre abonnement.");
+        } finally {
+            setIsUpdating(false);
+        }
+    }
+    
+    performUpdate();
+
+  }, [user, loading, searchParams, toast]);
+
+  if (isUpdating) {
+    return (
+        <div className="container mx-auto p-4 flex items-center justify-center min-h-[70vh]">
+            <div className="flex flex-col items-center gap-4">
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                <p className="text-muted-foreground">Finalisation de votre abonnement...</p>
+            </div>
+        </div>
+    )
+  }
+
+  if (error) {
+     return (
+        <div className="container mx-auto p-4 flex items-center justify-center min-h-[70vh]">
+            <Card className="max-w-lg text-center">
+                <CardHeader>
+                    <CardTitle className="text-2xl text-destructive">Erreur</CardTitle>
+                    <CardDescription>{error}</CardDescription>
+                </CardHeader>
+                 <CardFooter>
+                    <Button asChild className="w-full" size="lg">
+                        <Link href="/">Retourner au tableau de bord</Link>
+                    </Button>
+                </CardFooter>
+            </Card>
+        </div>
+     )
+  }
+
 
   return (
     <div className="container mx-auto p-4 flex items-center justify-center min-h-[70vh]">
@@ -43,4 +112,12 @@ export default function ConfirmationPage() {
       </Card>
     </div>
   );
+}
+
+export default function ConfirmationPage() {
+    return (
+        <Suspense fallback={<div>Chargement...</div>}>
+            <ConfirmationContent/>
+        </Suspense>
+    )
 }
