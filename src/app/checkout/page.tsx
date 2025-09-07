@@ -62,9 +62,10 @@ function CheckoutForm() {
   useEffect(() => {
     // We need to construct these URLs on the client-side to get the correct origin
     const origin = window.location.origin;
-    setAcceptUrl(`${origin}/confirmation`);
+    const encodedPlan = encodeURIComponent(plan);
+    setAcceptUrl(`${origin}/confirmation?plan=${encodedPlan}`);
     setDeclineUrl(`${origin}/payment-status?status=failed`);
-  }, []);
+  }, [plan]);
 
 
   const creditCardForm = useForm<z.infer<typeof creditCardSchema>>({
@@ -88,7 +89,8 @@ function CheckoutForm() {
   function onCreditCardSubmit(values: z.infer<typeof creditCardSchema>) {
     // In a real application, you would send this to a payment provider like Stripe.
     console.log('Credit Card details:', values);
-    router.push('/confirmation');
+    const encodedPlan = encodeURIComponent(plan);
+    router.push(`/confirmation?plan=${encodedPlan}`);
   }
 
   // Mobile money form submission is handled by a standard form POST, not an async function.
