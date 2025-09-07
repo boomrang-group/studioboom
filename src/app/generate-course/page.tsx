@@ -39,7 +39,7 @@ export default function GenerateCoursePage() {
   const [lessonContent, setLessonContent] = useState('');
   const { toast } = useToast();
   const lessonContentRef = useRef<HTMLDivElement>(null);
-  const { userData, loading: authLoading } = useAuth();
+  const { isSubscribed, loading: authLoading } = useAuth();
 
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -87,7 +87,7 @@ export default function GenerateCoursePage() {
       console.error('Export PDF error:', error);
       toast({
         title: 'Erreur',
-        description: 'Une erreur est survenue lors de l\'exportation en PDF.',
+        description: "Une erreur est survenue lors de l'exportation en PDF.",
         variant: 'destructive',
       });
     } finally {
@@ -156,7 +156,7 @@ export default function GenerateCoursePage() {
                  slide = pptx.addSlide();
                  slide.addText(sections[i], { x: 0.5, y: 0.25, fontSize: 28, bold: true });
             } else { // Content
-                 slide.addText(sections[i].replace(/<br \/>/g, '\n'), { x: 0.5, y: 1.5, fontSize: 16, w: '90%', h: '75%' });
+                 slide.addText(sections[i].replace(/<br \\/>/g, '\n'), { x: 0.5, y: 1.5, fontSize: 16, w: '90%', h: '75%' });
             }
         }
         
@@ -236,7 +236,7 @@ export default function GenerateCoursePage() {
 
             {authLoading ? (
                 <Skeleton className="h-10 w-48" />
-            ) : userData?.subscription?.plan !== 'gratuit' ? (
+            ) : isSubscribed ? (
                 <>
                     <Button variant="outline" onClick={handleExportDocx} disabled={isExporting}>
                         {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <File className="mr-2 h-4 w-4"/>}
@@ -271,4 +271,3 @@ export default function GenerateCoursePage() {
     </div>
   );
 }
-

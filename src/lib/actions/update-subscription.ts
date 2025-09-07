@@ -21,10 +21,14 @@ export async function updateSubscription(input: z.infer<typeof UpdateSubscriptio
 
   try {
     const userDocRef = doc(db, 'users', userId);
+    
+    const isTrial = newPlan.toLowerCase().includes('essai gratuit');
 
     const getEndDate = () => {
         const date = new Date();
-        if (newPlan.toLowerCase().includes('mensuel')) {
+        if (isTrial) {
+            date.setDate(date.getDate() + 7);
+        } else if (newPlan.toLowerCase().includes('mensuel')) {
             date.setMonth(date.getMonth() + 1);
         } else if (newPlan.toLowerCase().includes('trimestriel')) {
             date.setMonth(date.getMonth() + 3);
@@ -41,6 +45,7 @@ export async function updateSubscription(input: z.infer<typeof UpdateSubscriptio
     await updateDoc(userDocRef, {
       'subscription.plan': newPlan,
       'subscription.status': 'active',
+      'subscription.isTrial': isTrial,
       'subscription.startDate': serverTimestamp(),
       'subscription.endDate': getEndDate(),
     });

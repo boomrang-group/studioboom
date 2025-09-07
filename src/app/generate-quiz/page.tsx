@@ -44,7 +44,7 @@ export default function GenerateQuizPage() {
   const [quizData, setQuizData] = useState<GenerateQuizOutput | null>(null);
   const [quizLink, setQuizLink] = useState('');
   const { toast } = useToast();
-  const { userData, loading: authLoading } = useAuth();
+  const { isSubscribed, loading: authLoading } = useAuth();
 
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -273,7 +273,7 @@ export default function GenerateQuizPage() {
               <div className="mt-2">
                 { authLoading ? (
                     <Skeleton className="h-10 w-40" />
-                ) : userData?.subscription?.plan !== 'gratuit' ? (
+                ) : isSubscribed ? (
                     <Button variant="outline" onClick={handleExportCSV}>
                         <Download className="mr-2 h-4 w-4"/>
                         Exporter en CSV
