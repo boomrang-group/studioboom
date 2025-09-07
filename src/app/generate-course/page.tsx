@@ -39,7 +39,10 @@ export default function GenerateCoursePage() {
   const [lessonContent, setLessonContent] = useState('');
   const { toast } = useToast();
   const lessonContentRef = useRef<HTMLDivElement>(null);
-  const { isSubscribed, loading: authLoading } = useAuth();
+  const { isSubscribed, loading: authLoading, userData } = useAuth();
+  
+  const credits = userData?.subscription?.credits;
+  const isPayAsYouGo = userData?.subscription?.plan === 'Pay-As-You-Go';
 
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -55,11 +58,11 @@ export default function GenerateCoursePage() {
     try {
       const result = await generateLessonContent(values);
       setLessonContent(result.lessonContent);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       toast({
         title: 'Erreur',
-        description: 'Une erreur est survenue lors de la génération du cours.',
+        description: error.message || 'Une erreur est survenue lors de la génération du cours.',
         variant: 'destructive',
       });
     } finally {
@@ -182,6 +185,14 @@ export default function GenerateCoursePage() {
           Décrivez le cours que vous souhaitez créer et laissez l'IA faire le reste.
         </p>
       </div>
+
+      {isPayAsYouGo && (
+        <Card>
+            <CardContent className="pt-6">
+                <p className="text-center text-muted-foreground">Crédits restants : <span className="font-bold text-primary">{credits ?? 0}</span></p>
+            </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

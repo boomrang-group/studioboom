@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -11,6 +12,9 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
+import { checkAndDeductCredits } from '@/lib/actions/user-credits';
+import { auth } from '@/lib/firebase';
+
 
 const GenerateLessonContentInputSchema = z.object({
   prompt: z.string().describe('The prompt to use to generate the lesson content.'),
@@ -31,6 +35,11 @@ export type GenerateLessonContentOutput = z.infer<
 export async function generateLessonContent(
   input: GenerateLessonContentInput
 ): Promise<GenerateLessonContentOutput> {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("Authentification requise.");
+  }
+  await checkAndDeductCredits(user.uid);
   return generateLessonContentFlow(input);
 }
 

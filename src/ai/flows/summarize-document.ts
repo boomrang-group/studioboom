@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -11,6 +12,8 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
+import { checkAndDeductCredits } from '@/lib/actions/user-credits';
+import { auth } from '@/lib/firebase';
 
 const SummarizeDocumentInputSchema = z.object({
   documentDataUri: z
@@ -27,6 +30,11 @@ const SummarizeDocumentOutputSchema = z.object({
 export type SummarizeDocumentOutput = z.infer<typeof SummarizeDocumentOutputSchema>;
 
 export async function summarizeDocument(input: SummarizeDocumentInput): Promise<SummarizeDocumentOutput> {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("Authentification requise.");
+  }
+  await checkAndDeductCredits(user.uid);
   return summarizeDocumentFlow(input);
 }
 

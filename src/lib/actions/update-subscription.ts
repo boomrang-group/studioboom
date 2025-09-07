@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, serverTimestamp, increment } from 'firebase/firestore';
 import { z } from 'zod';
 
 const UpdateSubscriptionInputSchema = z.object({
@@ -23,6 +23,7 @@ export async function updateSubscription(input: z.infer<typeof UpdateSubscriptio
     const userDocRef = doc(db, 'users', userId);
     
     const isTrial = newPlan.toLowerCase().includes('essai gratuit');
+    const isPayAsYouGo = newPlan.toLowerCase().includes('pay-as-you-go');
 
     const getEndDate = () => {
         const date = new Date();
@@ -42,13 +43,20 @@ export async function updateSubscription(input: z.infer<typeof UpdateSubscriptio
         return date;
     }
 
-    await updateDoc(userDocRef, {
+    const subscriptionUpdate: any = {
       'subscription.plan': newPlan,
       'subscription.status': 'active',
       'subscription.isTrial': isTrial,
       'subscription.startDate': serverTimestamp(),
       'subscription.endDate': getEndDate(),
-    });
+    };
+
+    if (isPayAsYouGo) {
+        subscriptionUpdate['subscription.credits'] = increment(10);
+    }
+
+
+    await updateDoc(userDocRef, subscriptionUpdate);
     
     console.log(`Successfully updated subscription for user ${userId} to ${newPlan}`);
 

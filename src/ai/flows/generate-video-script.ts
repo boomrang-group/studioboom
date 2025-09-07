@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A video script generation AI agent.
@@ -10,6 +11,9 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
+import { checkAndDeductCredits } from '@/lib/actions/user-credits';
+import { auth } from '@/lib/firebase';
+
 
 const GenerateVideoScriptInputSchema = z.object({
   topic: z.string().describe('The topic of the lesson video.'),
@@ -24,6 +28,11 @@ const GenerateVideoScriptOutputSchema = z.object({
 export type GenerateVideoScriptOutput = z.infer<typeof GenerateVideoScriptOutputSchema>;
 
 export async function generateVideoScript(input: GenerateVideoScriptInput): Promise<GenerateVideoScriptOutput> {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("Authentification requise.");
+  }
+  await checkAndDeductCredits(user.uid);
   return generateVideoScriptFlow(input);
 }
 

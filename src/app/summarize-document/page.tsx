@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Loader2, FileUp, FileCheck, Volume2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/use-auth';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_FILE_TYPES = ['application/pdf', 'text/plain'];
@@ -51,6 +52,10 @@ export default function SummarizeDocumentPage() {
   const [audioSrc, setAudioSrc] = useState<string | null>(null);
   const [fileName, setFileName] = useState('');
   const { toast } = useToast();
+  const { userData } = useAuth();
+  
+  const credits = userData?.subscription?.credits;
+  const isPayAsYouGo = userData?.subscription?.plan === 'Pay-As-You-Go';
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -86,11 +91,11 @@ export default function SummarizeDocumentPage() {
         setIsGeneratingAudio(false);
       }
 
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       toast({
         title: 'Erreur',
-        description: 'Une erreur est survenue lors de la synthèse du document.',
+        description: error.message || 'Une erreur est survenue lors de la synthèse du document.',
         variant: 'destructive',
       });
     } finally {
@@ -108,6 +113,14 @@ export default function SummarizeDocumentPage() {
           Importez un document et obtenez un résumé concis en quelques instants.
         </p>
       </div>
+
+       {isPayAsYouGo && (
+        <Card>
+            <CardContent className="pt-6">
+                <p className="text-center text-muted-foreground">Crédits restants : <span className="font-bold text-primary">{credits ?? 0}</span></p>
+            </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
