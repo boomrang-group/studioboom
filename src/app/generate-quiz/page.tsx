@@ -109,8 +109,6 @@ export default function GenerateQuizPage() {
             });
         }
 
-        // The AI sometimes returns the full answer text, sometimes the option letter (A, B, C, D).
-        // We try to find the corresponding letter.
         const correctOptionIndex = q.options.findIndex(opt => opt.toLowerCase().trim() === q.answer.toLowerCase().trim());
         let correctLetter = q.answer;
         if (correctOptionIndex !== -1) {
@@ -124,7 +122,8 @@ export default function GenerateQuizPage() {
     });
 
     const csvContent = csvRows.join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const bom = new Uint8Array([0xEF, 0xBB, 0xBF]); // UTF-8 BOM
+    const blob = new Blob([bom, csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.href = url;

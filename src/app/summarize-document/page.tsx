@@ -6,7 +6,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { summarizeDocument } from '@/ai/flows/summarize-document';
-import { generateSummaryAudio } from '@/ai/flows/generate-summary-audio';
+import { generateAudioSummary } from '@/ai/flows/generate-audio-summary';
+import { generateAudioDialogue } from '@/ai/flows/generate-audio-dialogue';
 import {
   Form,
   FormControl,
@@ -17,8 +18,8 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, FileUp, FileCheck, Volume2 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Loader2, FileUp, FileCheck, Podcast, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 
@@ -47,9 +48,11 @@ const fileToDataURI = (file: File): Promise<string> => {
 
 export default function SummarizeDocumentPage() {
   const [isLoading, setIsLoading] = useState(false);
-  const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
+  const [isAudioLoading, setIsAudioLoading] = useState(false);
+  const [isDialogueLoading, setIsDialogueLoading] = useState(false);
   const [summary, setSummary] = useState('');
-  const [audioSrc, setAudioSrc] = useState<string | null>(null);
+  const [audioSummary, setAudioSummary] = useState<string | null>(null);
+  const [audioDialogue, setAudioDialogue] = useState<string | null>(null);
   const [fileName, setFileName] = useState('');
   const { toast } = useToast();
   const { userData } = useAuth();
@@ -65,7 +68,8 @@ export default function SummarizeDocumentPage() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     setSummary('');
-    setAudioSrc(null);
+    setAudioSummary(null);
+    setAudioDialogue(null);
     setFileName('');
 
     try {
@@ -74,23 +78,6 @@ export default function SummarizeDocumentPage() {
       const result = await summarizeDocument({ documentDataUri });
       setSummary(result.summary);
       setFileName(file.name);
-
-      // Now generate audio
-      setIsGeneratingAudio(true);
-      try {
-        const audioResult = await generateSummaryAudio(result.summary);
-        setAudioSrc(audioResult.media);
-      } catch (audioError) {
-        console.error(audioError);
-        toast({
-          title: 'Erreur Audio',
-          description: "La synthèse du texte a réussi, mais la génération de l'audio a échoué.",
-          variant: 'destructive',
-        });
-      } finally {
-        setIsGeneratingAudio(false);
-      }
-
     } catch (error: any) {
       console.error(error);
       toast({
@@ -101,6 +88,52 @@ export default function SummarizeDocumentPage() {
     } finally {
       setIsLoading(false);
     }
+  }
+
+  const handleGenerateAudio = async () => {
+      if (!summary.trim()) return;
+      setIsAudioLoading(true);
+      setAudioSummary(null);
+      try {
+          const result = await generateAudioSummary(summary);
+          setAudioSummary(result.media);
+          toast({
+            title: 'Succès',
+            description: 'Le résumé audio a été généré.'
+          });
+      } catch (error) {
+          console.error(error);
+          toast({
+            title: 'Erreur audio',
+            description: 'Une erreur est survenue lors de la génération du résumé audio.',
+            variant: 'destructive',
+          })
+      } finally {
+        setIsAudioLoading(false);
+      }
+  }
+
+  const handleGenerateDialogue = async () => {
+      if (!summary.trim()) return;
+      setIsDialogueLoading(true);
+      setAudioDialogue(null);
+      try {
+          const result = await generateAudioDialogue(summary);
+          setAudioDialogue(result.media);
+          toast({
+            title: 'Succès',
+            description: 'Le dialogue audio a été généré.'
+          });
+      } catch (error: any) {
+          console.error(error);
+          toast({
+            title: 'Erreur de dialogue',
+            description: 'Une erreur est survenue lors de la génération du dialogue audio.',
+            variant: 'destructive',
+          })
+      } finally {
+        setIsDialogueLoading(false);
+      }
   }
 
   return (
@@ -148,9 +181,9 @@ export default function SummarizeDocumentPage() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" disabled={isLoading || isGeneratingAudio}>
-                {(isLoading || isGeneratingAudio) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isLoading ? 'Analyse du document...' : isGeneratingAudio ? 'Génération de l\'audio...' : 'Générer la synthèse'}
+              <Button type="submit" disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isLoading ? 'Analyse du document...' : 'Générer la synthèse'}
               </Button>
             </form>
           </Form>
@@ -166,25 +199,41 @@ export default function SummarizeDocumentPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-             {isGeneratingAudio && (
-                <div className="flex items-center gap-2 text-muted-foreground mb-4">
-                    <Loader2 className="h-4 w-4 animate-spin"/>
-                    <p>Génération de la synthèse audio en cours...</p>
-                </div>
-             )}
-             {audioSrc && (
-                <div className="mb-6">
-                    <h3 className="font-semibold mb-2 flex items-center gap-2"><Volume2 className="h-5 w-5"/> Écouter la synthèse</h3>
-                    <audio controls src={audioSrc} className="w-full">
-                        Votre navigateur ne supporte pas l'élément audio.
-                    </audio>
-                </div>
-             )}
             <div
               className="prose dark:prose-invert max-w-none"
               dangerouslySetInnerHTML={{ __html: summary.replace(/\n/g, '<br />') }}
             />
           </CardContent>
+          <CardFooter className="flex-col items-start gap-4">
+            <div className="flex flex-wrap gap-2">
+                <Button onClick={handleGenerateAudio} disabled={isAudioLoading || !summary.trim()}>
+                    {isAudioLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Podcast className="mr-2 h-4 w-4" />}
+                    Générer un résumé audio
+                </Button>
+                <Button onClick={handleGenerateDialogue} disabled={isDialogueLoading || !summary.trim()}>
+                    {isDialogueLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Users className="mr-2 h-4 w-4" />}
+                    Générer un dialogue audio
+                </Button>
+            </div>
+            {audioSummary && (
+                <div className="w-full mt-4">
+                    <h3 className="font-semibold mb-2">Résumé audio :</h3>
+                    <audio controls className="w-full">
+                        <source src={audioSummary} type="audio/wav" />
+                        Votre navigateur ne supporte pas l'élément audio.
+                    </audio>
+                </div>
+            )}
+            {audioDialogue && (
+                <div className="w-full mt-4">
+                    <h3 className="font-semibold mb-2">Dialogue audio :</h3>
+                    <audio controls className="w-full">
+                        <source src={audioDialogue} type="audio/wav" />
+                        Votre navigateur ne supporte pas l'élément audio.
+                    </audio>
+                </div>
+            )}
+          </CardFooter>
         </Card>
       )}
     </div>
