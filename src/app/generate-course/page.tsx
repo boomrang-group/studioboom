@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef } from 'react';
@@ -7,6 +8,9 @@ import { z } from 'zod';
 import { generateLessonContent } from '@/ai/flows/generate-lesson-content';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { Packer, Document, Paragraph, TextRun, HeadingLevel } from 'docx';
+import PptxGenJS from 'pptxgenjs';
+
 
 import {
   Form,
@@ -22,6 +26,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Loader2, File, Presentation, Crown, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import { useAuth } from '@/hooks/use-auth';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const formSchema = z.object({
   prompt: z.string().min(10, 'Le sujet doit contenir au moins 10 caractères.'),
@@ -33,6 +39,8 @@ export default function GenerateCoursePage() {
   const [lessonContent, setLessonContent] = useState('');
   const { toast } = useToast();
   const lessonContentRef = useRef<HTMLDivElement>(null);
+  const { userData, loading: authLoading } = useAuth();
+
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -84,6 +92,82 @@ export default function GenerateCoursePage() {
       });
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handleExportDocx = async () => {
+    if (!lessonContent) return;
+    setIsExporting(true);
+    toast({ title: 'Exportation en DOCX', description: 'Veuillez patienter...' });
+    
+    try {
+        const doc = new Document({
+            sections: [{
+                children: lessonContent.split('<br />').map(line => {
+                    if (line.startsWith('**') && line.endsWith('**')) {
+                        return new Paragraph({
+                            children: [new TextRun({ text: line.slice(2, -2), bold: true })],
+                            heading: HeadingLevel.HEADING_2,
+                            spacing: { after: 200 },
+                        });
+                    }
+                    return new Paragraph({ children: [new TextRun(line)] });
+                }),
+            }],
+        });
+
+        const blob = await Packer.toBlob(doc);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'cours-studio-boomrang.docx';
+        a.click();
+        URL.revokeObjectURL(url);
+
+        toast({ title: 'Succès', description: 'Le document Word a été téléchargé.' });
+    } catch (error) {
+        console.error('Export DOCX error:', error);
+        toast({ title: 'Erreur', description: 'Une erreur est survenue lors de l\'exportation en DOCX.', variant: 'destructive' });
+    } finally {
+        setIsExporting(false);
+    }
+  };
+
+  const handleExportPptx = async () => {
+    if (!lessonContent) return;
+    setIsExporting(true);
+    toast({ title: 'Exportation en PPTX', description: 'Veuillez patienter...' });
+
+    try {
+        const pptx = new PptxGenJS();
+        pptx.layout = 'LAYOUT_WIDE';
+        
+        const sections = lessonContent.split('**').map(s => s.trim()).filter(s => s);
+        let currentTitle = 'Introduction';
+        if (sections.length > 0) {
+            currentTitle = sections.shift() || 'Introduction';
+        }
+        
+        let slide = pptx.addSlide();
+        slide.addText(currentTitle, { x: 0.5, y: 0.25, fontSize: 36, bold: true, w: '90%', align: 'center' });
+
+        for (let i = 0; i < sections.length; i++) {
+            if (i % 2 === 0) { // Title
+                 slide = pptx.addSlide();
+                 slide.addText(sections[i], { x: 0.5, y: 0.25, fontSize: 28, bold: true });
+            } else { // Content
+                 slide.addText(sections[i].replace(/<br \/>/g, '\n'), { x: 0.5, y: 1.5, fontSize: 16, w: '90%', h: '75%' });
+            }
+        }
+        
+        await pptx.writeFile({ fileName: 'presentation-studio-boomrang.pptx' });
+
+        toast({ title: 'Succès', description: 'La présentation PowerPoint a été téléchargée.' });
+    } catch (error) {
+        console.error('Export PPTX error:', error);
+        toast({ title: 'Erreur', description: 'Une erreur est survenue lors de l\'exportation en PPTX.', variant: 'destructive' });
+    } finally {
+        setIsExporting(false);
     }
   };
 
@@ -140,7 +224,7 @@ export default function GenerateCoursePage() {
           <CardContent>
             <div
               ref={lessonContentRef}
-              className="prose dark:prose-invert max-w-none p-4 bg-white text-black"
+              className="prose dark:prose-invert max-w-none p-4 bg-background text-foreground"
               dangerouslySetInnerHTML={{ __html: lessonContent.replace(/\n/g, '<br />') }}
             />
           </CardContent>
@@ -149,23 +233,42 @@ export default function GenerateCoursePage() {
                 {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Download className="mr-2 h-4 w-4"/>}
                 Exporter en PDF
              </Button>
-             <Button variant="outline" asChild>
-                <Link href="/subscribe">
-                    <Crown className="mr-2 h-4 w-4 text-amber-500" />
-                    <File className="mr-2 h-4 w-4"/>
-                    Word (.docx)
-                </Link>
-             </Button>
-             <Button variant="outline" asChild>
-                <Link href="/subscribe">
-                    <Crown className="mr-2 h-4 w-4 text-amber-500" />
-                    <Presentation className="mr-2 h-4 w-4"/>
-                    PowerPoint (.pptx)
-                </Link>
-             </Button>
+
+            {authLoading ? (
+                <Skeleton className="h-10 w-48" />
+            ) : userData?.subscription?.plan !== 'gratuit' ? (
+                <>
+                    <Button variant="outline" onClick={handleExportDocx} disabled={isExporting}>
+                        {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <File className="mr-2 h-4 w-4"/>}
+                        Word (.docx)
+                    </Button>
+                    <Button variant="outline" onClick={handleExportPptx} disabled={isExporting}>
+                        {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Presentation className="mr-2 h-4 w-4"/>}
+                        PowerPoint (.pptx)
+                    </Button>
+                </>
+            ) : (
+                <>
+                    <Button variant="outline" asChild>
+                        <Link href="/subscribe">
+                            <Crown className="mr-2 h-4 w-4 text-amber-500" />
+                            <File className="mr-2 h-4 w-4"/>
+                            Word (.docx)
+                        </Link>
+                    </Button>
+                    <Button variant="outline" asChild>
+                        <Link href="/subscribe">
+                            <Crown className="mr-2 h-4 w-4 text-amber-500" />
+                            <Presentation className="mr-2 h-4 w-4"/>
+                            PowerPoint (.pptx)
+                        </Link>
+                    </Button>
+                </>
+            )}
           </CardFooter>
         </Card>
       )}
     </div>
   );
 }
+
