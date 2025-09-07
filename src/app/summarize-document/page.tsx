@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -5,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { summarizeDocument } from '@/ai/flows/summarize-document';
+import { generateSummaryAudio } from '@/ai/flows/generate-summary-audio';
 import {
   Form,
   FormControl,
@@ -16,7 +18,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, FileUp, FileCheck } from 'lucide-react';
+import { Loader2, FileUp, FileCheck, Volume2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -44,7 +46,9 @@ const fileToDataURI = (file: File): Promise<string> => {
 
 export default function SummarizeDocumentPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
   const [summary, setSummary] = useState('');
+  const [audioSrc, setAudioSrc] = useState<string | null>(null);
   const [fileName, setFileName] = useState('');
   const { toast } = useToast();
 
@@ -56,6 +60,8 @@ export default function SummarizeDocumentPage() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     setSummary('');
+    setAudioSrc(null);
+    setFileName('');
 
     try {
       const file = values.document[0];
@@ -63,6 +69,23 @@ export default function SummarizeDocumentPage() {
       const result = await summarizeDocument({ documentDataUri });
       setSummary(result.summary);
       setFileName(file.name);
+
+      // Now generate audio
+      setIsGeneratingAudio(true);
+      try {
+        const audioResult = await generateSummaryAudio(result.summary);
+        setAudioSrc(audioResult.media);
+      } catch (audioError) {
+        console.error(audioError);
+        toast({
+          title: 'Erreur Audio',
+          description: "La synthèse du texte a réussi, mais la génération de l'audio a échoué.",
+          variant: 'destructive',
+        });
+      } finally {
+        setIsGeneratingAudio(false);
+      }
+
     } catch (error) {
       console.error(error);
       toast({
@@ -112,9 +135,9 @@ export default function SummarizeDocumentPage() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Générer la synthèse
+              <Button type="submit" disabled={isLoading || isGeneratingAudio}>
+                {(isLoading || isGeneratingAudio) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isLoading ? 'Analyse du document...' : isGeneratingAudio ? 'Génération de l\'audio...' : 'Générer la synthèse'}
               </Button>
             </form>
           </Form>
@@ -130,6 +153,20 @@ export default function SummarizeDocumentPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
+             {isGeneratingAudio && (
+                <div className="flex items-center gap-2 text-muted-foreground mb-4">
+                    <Loader2 className="h-4 w-4 animate-spin"/>
+                    <p>Génération de la synthèse audio en cours...</p>
+                </div>
+             )}
+             {audioSrc && (
+                <div className="mb-6">
+                    <h3 className="font-semibold mb-2 flex items-center gap-2"><Volume2 className="h-5 w-5"/> Écouter la synthèse</h3>
+                    <audio controls src={audioSrc} className="w-full">
+                        Votre navigateur ne supporte pas l'élément audio.
+                    </audio>
+                </div>
+             )}
             <div
               className="prose dark:prose-invert max-w-none"
               dangerouslySetInnerHTML={{ __html: summary.replace(/\n/g, '<br />') }}
