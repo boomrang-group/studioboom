@@ -139,7 +139,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <Sidebar>
         <SidebarHeader className="p-4">
           <div className="flex items-center gap-2">
-           <img src="https://www.boomrang-group.com/wp-content/uploads/2023/11/Logo-bmg-300x289.png" alt="Studio BoomRang Logo" width={32} height={32} className="rounded-full" data-ai-hint="logo camera" />
+           <img src="https://www.boomrang-group.com/wp-content/uploads/2025/09/WhatsApp-Image-2025-09-07-a-19.08.28_2e9e8429.jpg" alt="Studio BoomRang Logo" width={32} height={32} className="rounded-full" data-ai-hint="logo camera" />
             <h2 className="text-xl font-bold font-headline text-primary">
               Studio BoomRang
             </h2>
